@@ -1,0 +1,1 @@
+New to the project? Start here: [docs/AutoPenAI_Team_Onboarding.md](docs/AutoPenAI_Team_Onboarding.md)
