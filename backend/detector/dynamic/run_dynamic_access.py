@@ -1,13 +1,11 @@
-from detector.dynamic.auth_session import login_dvwa, verify_session_valid
+from detector.dynamic.auth_session import login_dvwa
 from detector.dynamic.cors_checks import check_wildcard_cors, check_cors_credentials_misconfig
 from detector.dynamic.auth_bypass_checks import check_unauthenticated_access
 from detector.dynamic.rate_limit_checks import check_rate_limit
 
 
-def run_access_checks(base_url: str = "http://localhost:8080") -> list[dict]:
-    session = login_dvwa(base_url)
-    if not verify_session_valid(session, base_url):
-        raise Exception("Login failed, cannot run access checks")
+def run_access_checks(base_url: str = "http://localhost:8080", username: str | None = None, password: str | None = None) -> list[dict]:
+    session = login_dvwa(base_url, username, password)
 
     findings = []
     findings += check_wildcard_cors(session, f"{base_url}/index.php")
