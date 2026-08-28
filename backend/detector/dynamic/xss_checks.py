@@ -1,4 +1,6 @@
+
 import requests
+import re
 import uuid
 
 
@@ -23,35 +25,57 @@ def check_reflected_xss(session: requests.Session, url: str, param: str) -> list
     return findings
 
 
-def check_stored_xss(session: requests.Session, submit_url: str, view_url: str, field: str) -> list[dict]:
-    """
-    Submits a marker to a form (e.g. guestbook/comment field), then
-    checks a separate page where it would be displayed. Confirms
-    stored XSS, not just reflected.
-    """
+def check_stored_xss(session: requests.Session, page_url: str, name_field: str, message_field: str) -> list[dict]:
     findings = []
     marker = f"storedxss{uuid.uuid4().hex[:8]}"
     payload = f"<{marker}>"
+
     try:
-        session.post(submit_url, data={field: payload}, timeout=5)
-        view_resp = session.get(view_url, timeout=5)
+        page = session.get(page_url, timeout=5)
+        print("=== PAGE STATUS ===", page.status_code)
+        print("=== FINAL URL ===", page.url)
+        print("=== FIRST 500 CHARS ===")
+        print(page.text[:500])
+
+        idx = page.text.find("user_token")
+        if idx == -1:
+            print("=== 'user_token' STRING NOT FOUND ANYWHERE ON PAGE ===")
+        else:
+            print("=== SNIPPET AROUND user_token ===")
+            print(page.text[max(0, idx-100):idx+150])
+
+        match = re.search(r"user_token['\"]\s+value=['\"]([a-f0-9]+)['\"]", page.text)
+        if not match:
+            findings.append({"error": "Could not find CSRF token on stored XSS page"})
+            return findings
+        csrf_token = match.group(1)
+
+        session.post(page_url, data={
+            name_field: "tester",
+            message_field: payload,
+            "btnSign": "Sign Guestbook",
+            "user_token": csrf_token,
+        }, timeout=5)
+
+        view_resp = session.get(page_url, timeout=5)
         if payload in view_resp.text:
             findings.append({
                 "type": "xss_risk",
-                "evidence": f"Stored, unescaped input found on {view_url} after submitting via '{field}'",
-                "location": view_url
+                "evidence": f"Stored, unescaped input found on {page_url} after submitting via '{message_field}'",
+                "location": page_url
             })
     except requests.RequestException as e:
         findings.append({"error": f"request failed: {e}"})
     return findings
 
-
 if __name__ == "__main__":
     from detector.dynamic.auth_session import login_dvwa
-    session = login_dvwa()
+    session = login_dvwa("http://localhost:8080", username="admin", password="iamesar")
+
     reflected_url = "http://localhost:8080/vulnerabilities/xss_r/"
     print("Reflected:", check_reflected_xss(session, reflected_url, "name"))
 
-    # DVWA's stored XSS page uses fields "txtName" and "mtxMessage"
     stored_url = "http://localhost:8080/vulnerabilities/xss_s/"
-    print("Stored:", check_stored_xss(session, stored_url, stored_url, "mtxMessage"))
+    print("Stored:", check_stored_xss(session, stored_url, "txtName", "mtxMessage"))
+
+    

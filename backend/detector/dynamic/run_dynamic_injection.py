@@ -15,7 +15,8 @@ def run_injection_checks(base_url: str = "http://localhost:8080", security_level
     findings += check_sql_injection_error_based(session, f"{base_url}/vulnerabilities/sqli/", "id", sqli_extra)
     findings += check_sql_injection_boolean(session, f"{base_url}/vulnerabilities/sqli/", "id", sqli_extra)
     findings += check_reflected_xss(session, f"{base_url}/vulnerabilities/xss_r/", "name")
-    findings += check_stored_xss(session, f"{base_url}/vulnerabilities/xss_s/", f"{base_url}/vulnerabilities/xss_s/", "mtxMessage")
+
+    findings += check_stored_xss(session, f"{base_url}/vulnerabilities/xss_s/", "txtName", "mtxMessage")
     return findings
 
 
