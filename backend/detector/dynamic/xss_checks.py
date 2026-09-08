@@ -32,30 +32,21 @@ def check_stored_xss(session: requests.Session, page_url: str, name_field: str, 
 
     try:
         page = session.get(page_url, timeout=5)
-        print("=== PAGE STATUS ===", page.status_code)
-        print("=== FINAL URL ===", page.url)
-        print("=== FIRST 500 CHARS ===")
-        print(page.text[:500])
-
-        idx = page.text.find("user_token")
-        if idx == -1:
-            print("=== 'user_token' STRING NOT FOUND ANYWHERE ON PAGE ===")
-        else:
-            print("=== SNIPPET AROUND user_token ===")
-            print(page.text[max(0, idx-100):idx+150])
-
+        
+        # Try to find CSRF token if it exists (some forms have it, some don't)
         match = re.search(r"user_token['\"]\s+value=['\"]([a-f0-9]+)['\"]", page.text)
-        if not match:
-            findings.append({"error": "Could not find CSRF token on stored XSS page"})
-            return findings
-        csrf_token = match.group(1)
+        csrf_token = match.group(1) if match else None
 
-        session.post(page_url, data={
+        # Build POST data; include CSRF token only if found
+        post_data = {
             name_field: "tester",
             message_field: payload,
             "btnSign": "Sign Guestbook",
-            "user_token": csrf_token,
-        }, timeout=5)
+        }
+        if csrf_token:
+            post_data["user_token"] = csrf_token
+
+        session.post(page_url, data=post_data, timeout=5)
 
         view_resp = session.get(page_url, timeout=5)
         if payload in view_resp.text:
@@ -70,7 +61,7 @@ def check_stored_xss(session: requests.Session, page_url: str, name_field: str, 
 
 if __name__ == "__main__":
     from detector.dynamic.auth_session import login_dvwa
-    session = login_dvwa("http://localhost:8080", username="admin", password="iamesar")
+    session = login_dvwa("http://localhost:8080", username="admin", password="password")
 
     reflected_url = "http://localhost:8080/vulnerabilities/xss_r/"
     print("Reflected:", check_reflected_xss(session, reflected_url, "name"))
