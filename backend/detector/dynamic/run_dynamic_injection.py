@@ -1,10 +1,11 @@
 from detector.dynamic.auth_session import login_dvwa, verify_session_valid, set_dvwa_security, get_dvwa_security_level
 from detector.dynamic.injection_checks import check_sql_injection_error_based, check_sql_injection_boolean
 from detector.dynamic.xss_checks import check_reflected_xss, check_stored_xss
+from detector.dynamic.error_handling_checks import check_verbose_error_handling
 
 
 def run_injection_checks(base_url: str = "http://localhost:8080", security_level: str = "low") -> list[dict]:
-    session = login_dvwa(base_url, username="admin", password="iamesar")
+    session = login_dvwa(base_url, username="admin", password="password")
     set_dvwa_security(session, base_url, security_level)
 
     actual_level = get_dvwa_security_level(session, base_url)
@@ -15,8 +16,8 @@ def run_injection_checks(base_url: str = "http://localhost:8080", security_level
     findings += check_sql_injection_error_based(session, f"{base_url}/vulnerabilities/sqli/", "id", sqli_extra)
     findings += check_sql_injection_boolean(session, f"{base_url}/vulnerabilities/sqli/", "id", sqli_extra)
     findings += check_reflected_xss(session, f"{base_url}/vulnerabilities/xss_r/", "name")
-
     findings += check_stored_xss(session, f"{base_url}/vulnerabilities/xss_s/", "txtName", "mtxMessage")
+    findings += check_verbose_error_handling(session, f"{base_url}/vulnerabilities/sqli/", "id", sqli_extra)
     return findings
 
 
