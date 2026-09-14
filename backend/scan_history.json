@@ -1,0 +1,277 @@
+[
+  {
+    "scanned_at": "2026-09-14T12:27:09.543174+00:00",
+    "risk_score": 1.9,
+    "total_findings": 1,
+    "severity_counts": {
+      "low": 1
+    },
+    "target": "https://example.com"
+  },
+  {
+    "scanned_at": "2026-09-14T12:29:43.836114+00:00",
+    "risk_score": 15.5,
+    "total_findings": 3,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1,
+      "low": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T12:27:10.072350+00:00",
+    "risk_score": 15.5,
+    "total_findings": 3,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1,
+      "low": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T12:23:45.018528+00:00",
+    "risk_score": 15.5,
+    "total_findings": 3,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1,
+      "low": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T12:18:25.024861+00:00",
+    "risk_score": 13.6,
+    "total_findings": 2,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T12:09:56.519099+00:00",
+    "risk_score": 13.6,
+    "total_findings": 2,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T12:09:24.580571+00:00",
+    "risk_score": 13.6,
+    "total_findings": 2,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T12:08:10.863004+00:00",
+    "risk_score": 13.6,
+    "total_findings": 2,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T12:07:07.789187+00:00",
+    "risk_score": 13.6,
+    "total_findings": 2,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T12:07:05.954114+00:00",
+    "risk_score": 13.6,
+    "total_findings": 2,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T12:07:03.459746+00:00",
+    "risk_score": 13.6,
+    "total_findings": 2,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T12:02:34.608788+00:00",
+    "risk_score": 13.6,
+    "total_findings": 2,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T12:02:28.946564+00:00",
+    "risk_score": 13.6,
+    "total_findings": 2,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T11:58:56.802098+00:00",
+    "risk_score": 13.6,
+    "total_findings": 2,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T11:57:58.744615+00:00",
+    "risk_score": 13.6,
+    "total_findings": 2,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T11:57:58.066610+00:00",
+    "risk_score": 13.6,
+    "total_findings": 2,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "scanned_at": "2026-09-14T12:34:54.977414+00:00",
+    "risk_score": 0,
+    "total_findings": 0,
+    "severity_counts": {},
+    "target": "http://localhost:8888"
+  },
+  {
+    "scanned_at": "2026-09-14T12:27:35.656572+00:00",
+    "risk_score": 0,
+    "total_findings": 0,
+    "severity_counts": {},
+    "target": "http://localhost:8888"
+  },
+  {
+    "scanned_at": "2026-09-14T12:24:09.723393+00:00",
+    "risk_score": 0,
+    "total_findings": 0,
+    "severity_counts": {},
+    "target": "http://localhost:8888"
+  },
+  {
+    "scanned_at": "2026-09-14T12:19:04.120817+00:00",
+    "risk_score": 0,
+    "total_findings": 0,
+    "severity_counts": {},
+    "target": "http://localhost:8888"
+  },
+  {
+    "scanned_at": "2026-09-14T12:14:04.793731+00:00",
+    "risk_score": 0,
+    "total_findings": 0,
+    "severity_counts": {},
+    "target": "http://localhost:8888"
+  },
+  {
+    "scanned_at": "2026-09-14T12:10:51.314492+00:00",
+    "risk_score": 0,
+    "total_findings": 0,
+    "severity_counts": {},
+    "target": "http://localhost:8888"
+  },
+  {
+    "scanned_at": "2026-09-14T12:35:10.132592+00:00",
+    "risk_score": 36.5,
+    "total_findings": 14,
+    "severity_counts": {
+      "high": 4,
+      "low": 9,
+      "info": 1
+    },
+    "target": "http://localhost:8080"
+  },
+  {
+    "scanned_at": "2026-09-14T12:34:12.038640+00:00",
+    "risk_score": 36.5,
+    "total_findings": 14,
+    "severity_counts": {
+      "high": 4,
+      "low": 9,
+      "info": 1
+    },
+    "target": "http://localhost:8080"
+  },
+  {
+    "scanned_at": "2026-09-14T12:29:44.029168+00:00",
+    "risk_score": 0,
+    "total_findings": 0,
+    "severity_counts": {},
+    "target": "http://localhost:8080"
+  },
+  {
+    "scanned_at": "2026-09-14T12:18:25.097597+00:00",
+    "risk_score": 0,
+    "total_findings": 0,
+    "severity_counts": {},
+    "target": "http://localhost:8080"
+  },
+  {
+    "scanned_at": "2026-09-14T12:13:28.688645+00:00",
+    "risk_score": 0,
+    "total_findings": 0,
+    "severity_counts": {},
+    "target": "http://localhost:8080"
+  },
+  {
+    "scanned_at": "2026-09-14T12:13:26.505113+00:00",
+    "risk_score": 0,
+    "total_findings": 0,
+    "severity_counts": {},
+    "target": "http://localhost:8080"
+  },
+  {
+    "scanned_at": "2026-09-14T12:13:24.367793+00:00",
+    "risk_score": 0,
+    "total_findings": 0,
+    "severity_counts": {},
+    "target": "http://localhost:8080"
+  },
+  {
+    "scanned_at": "2026-09-14T12:12:04.337507+00:00",
+    "risk_score": 0,
+    "total_findings": 0,
+    "severity_counts": {},
+    "target": "http://localhost:8080"
+  },
+  {
+    "scanned_at": "2026-09-14T12:11:04.775249+00:00",
+    "risk_score": 0,
+    "total_findings": 0,
+    "severity_counts": {},
+    "target": "http://localhost:8080"
+  }
+]

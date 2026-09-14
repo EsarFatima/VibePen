@@ -133,3 +133,120 @@ Per the task doc, Person 3 should be building, in `backend/detector/scoring/` an
 - Always run detector scripts as modules from the `backend/` folder: `python -m detector.dynamic.xxx`, never `python detector\dynamic\xxx.py` directly, or imports break.
 - If `ImportError: cannot import name X from Y` shows up, the file exists but is empty/wasn't saved after pasting — this has happened multiple times this session, always check the file isn't blank first.
 - DVWA admin password on this dev machine is `iamesar`, not the default `password` — stored in `.env`, not hardcoded in committed code.
+
+---
+
+## 10. Current Status Update — September 2026
+
+> This section is the current status and supersedes older unfinished items above where they conflict.
+
+### Overall position
+
+The project is now a working dynamic-scanning prototype with automatic target detection, shared scoring, scan history, and a simple dashboard. The user enters only a website URL; the system decides which checks to run.
+
+### Supported targets
+
+| Target | Automatic detection | Dashboard scan | Current coverage |
+|---|---:|---:|---|
+| OWASP Juice Shop | ✅ | ✅ | Application-specific API checks plus browser safety checks |
+| DVWA | ✅ | ✅ | Public access checks plus authenticated SQLi, XSS, rate-limit, and error checks |
+| Unknown live website | ✅ | ✅ | Safe generic HTTPS and security-header checks |
+
+### Juice Shop verified result
+
+Live target: `http://localhost:3000`
+
+- 3 findings
+- Risk score: `15.5`
+- 1 critical, 1 medium, 1 low
+- Anonymous administrative configuration access
+- Wildcard CORS
+- Missing browser safety headers
+
+Relevant files:
+
+- `backend/detector/dynamic/juice_shop_checks.py`
+- `backend/detector/dynamic/run_dynamic_juice_shop.py`
+- `backend/target_detection.py`
+
+### DVWA verified result
+
+Live target: `http://localhost:8080`
+
+- 14 findings
+- Risk score: `36.5`
+- Authentication verified through the local server environment
+- Finding categories include missing rate limiting, SQL injection, XSS, and verbose error handling
+
+Relevant file:
+
+- `backend/detector/dynamic/run_dynamic_dvwa.py`
+
+The dashboard does not display or return passwords. Authenticated DVWA checks require server-side environment variables:
+
+```powershell
+$env:DVWA_USERNAME = "admin"
+$env:DVWA_PASSWORD = "<local password>"
+$env:DVWA_SECURITY_LEVEL = "low"
+```
+
+The current running DVWA container accepted the standard local `admin` / `password` credentials during verification. Teammates must use the credentials configured by their own DVWA instance.
+
+### Generic live-site checks
+
+Unknown reachable websites receive a baseline scan instead of an empty or misleading clean result:
+
+- HTTPS usage
+- Content Security Policy
+- Referrer Policy
+- Permissions Policy
+
+Example verified target: `https://example.com` returned one low-severity missing-header finding.
+
+The report explains that only general checks were performed because the application was not recognized.
+
+### Scoring and reporting
+
+Implemented in `backend/detector/scoring/scorer.py`:
+
+- Deterministic finding IDs
+- Severity and confidence
+- Per-finding score
+- Risk score total
+- Severity counts
+- Ranking by score
+- Plain-language descriptions and remediation guidance
+
+### Dashboard and history
+
+Implemented in `backend/app.py`:
+
+- URL-only user workflow
+- Automatic target detection
+- Risk score and severity summary
+- Finding evidence and remediation
+- Animated gear while a scan is running
+- Clear completed and failed states
+- Simple language for non-technical users
+- Recent scan timeline
+- Target-specific scan history
+- `GET /api/scan`
+- `GET /api/history`
+
+History is stored locally in `backend/scan_history.json`. The current page is a functional prototype; it is intentionally simple and can later be replaced by the Figma-designed UI without changing the scan API.
+
+### Team ownership of current work
+
+- **Member 1 — Static analysis:** still outstanding. Build source-code checks for hardcoded secrets, unsafe SQL construction, `eval()`, unsafe HTML rendering, and insecure dependencies.
+- **Member 2A — Dynamic access and authentication:** DVWA and Juice Shop access-control, authentication, CORS, rate-limit, and cross-account work.
+- **Member 2B — Dynamic injection and behavior:** SQL injection, XSS, error disclosure, input reflection, and browser safety checks.
+- **Member 3 — Scoring and reporting:** severity, confidence, risk ranking, history, and the shared report contract.
+
+### Next steps
+
+1. Build Member 1's static analyzer and test it against cloned Juice Shop source.
+2. Normalize static findings to the same format as dynamic findings.
+3. Combine static and dynamic results into one full-scan report.
+4. Add history comparisons for new, fixed, and unchanged findings.
+5. Expand Juice Shop and DVWA endpoint coverage with regression tests.
+6. Replace the prototype dashboard with the final Figma UI while keeping the existing API contract.
