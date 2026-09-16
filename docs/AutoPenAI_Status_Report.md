@@ -156,12 +156,14 @@ The project is now a working dynamic-scanning prototype with automatic target de
 
 Live target: `http://localhost:3000`
 
-- 3 findings
-- Risk score: `15.5`
-- 1 critical, 1 medium, 1 low
+- Anonymous scan: 3 findings, risk score `15.5`
+- Authenticated scan with two test accounts: 6 findings, risk score `28.2`
+- 2 critical, 1 medium, 3 low in the authenticated scan
 - Anonymous administrative configuration access
+- Cross-account access to another user's basket
 - Wildcard CORS
 - Missing browser safety headers
+- Detailed error pages on unauthenticated order-history and user-data requests
 
 Relevant files:
 
@@ -248,5 +250,5 @@ History is stored locally in `backend/scan_history.json`. The current page is a 
 2. Normalize static findings to the same format as dynamic findings.
 3. Combine static and dynamic results into one full-scan report.
 4. Add history comparisons for new, fixed, and unchanged findings.
-5. Expand Juice Shop and DVWA endpoint coverage with regression tests.
+5. Expand Juice Shop and DVWA endpoint coverage with regression tests. Juice Shop's anonymous and authenticated runner paths now have regression coverage.
 6. Replace the prototype dashboard with the final Figma UI while keeping the existing API contract.

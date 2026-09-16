@@ -166,6 +166,26 @@ def check_juice_shop_search_errors(session: requests.Session, base_url: str) -> 
     return findings
 
 
+def check_juice_shop_endpoint_errors(session: requests.Session, base_url: str) -> list[dict]:
+    findings = []
+    for path in ["/rest/order-history", "/rest/user/data"]:
+        url = f"{base_url.rstrip('/')}{path}"
+        try:
+            response = session.get(url, timeout=5)
+            body = response.text.lower()
+            technical_markers = ["stack", "typeerror", "unexpected path", "illegal activity"]
+            marker = next((item for item in technical_markers if item in body), None)
+            if response.status_code >= 500 and marker:
+                findings.append({
+                    "type": "verbose_error_handling",
+                    "evidence": f"An unauthenticated request to {path} returned HTTP {response.status_code} with technical error detail '{marker}'",
+                    "location": response.url,
+                })
+        except requests.RequestException as error:
+            findings.append({"error": f"request failed: {error}"})
+    return findings
+
+
 def check_juice_shop_reflected_input(session: requests.Session, base_url: str) -> list[dict]:
     url = f"{base_url.rstrip('/')}/rest/products/search"
     marker = f"vibepen-{uuid.uuid4().hex}"

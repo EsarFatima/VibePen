@@ -18,7 +18,14 @@ app = FastAPI(title="VibePen Security Dashboard")
 def scan(target: str = Query("http://localhost:3000", min_length=1)) -> dict:
   profile = detect_target(target)
   if profile.kind == "juice_shop":
-    findings, account = run_juice_shop_checks(target)
+    findings, account = run_juice_shop_checks(
+      target,
+      email=os.getenv("JUICE_SHOP_EMAIL"),
+      password=os.getenv("JUICE_SHOP_PASSWORD"),
+      second_email=os.getenv("JUICE_SHOP_SECOND_EMAIL"),
+      second_password=os.getenv("JUICE_SHOP_SECOND_PASSWORD"),
+      basket_id=int(os.getenv("JUICE_SHOP_BASKET_ID", "1")),
+    )
   elif profile.kind == "dvwa":
     findings, account = run_dvwa_checks(
       target,

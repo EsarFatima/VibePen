@@ -9,6 +9,7 @@ from detector.dynamic.juice_shop_checks import (
     check_juice_shop_anonymous_basket_access,
     check_juice_shop_cross_account_basket,
     check_juice_shop_cors,
+    check_juice_shop_endpoint_errors,
     check_juice_shop_reflected_input,
     check_juice_shop_security_headers,
     check_juice_shop_search_errors,
@@ -31,6 +32,7 @@ def run_juice_shop_checks(
     findings = []
     findings += check_juice_shop_cors(session, base_url)
     findings += check_juice_shop_search_errors(session, base_url)
+    findings += check_juice_shop_endpoint_errors(session, base_url)
     findings += check_juice_shop_reflected_input(session, base_url)
     findings += check_juice_shop_security_headers(session, base_url)
     session.headers.pop("Authorization", None)
