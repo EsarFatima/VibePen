@@ -157,6 +157,17 @@
     "target": "http://localhost:8080"
   },
   {
+    "scanned_at": "2026-09-25T14:38:22.302960+00:00",
+    "risk_score": 18.7,
+    "total_findings": 5,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1,
+      "low": 3
+    },
+    "target": "http://localhost:3000"
+  },
+  {
     "scanned_at": "2026-09-17T16:11:41.725661+00:00",
     "risk_score": 18.7,
     "total_findings": 5,
@@ -366,14 +377,13 @@
     "target": "http://localhost:3000"
   },
   {
-    "scanned_at": "2026-09-17T15:36:50.459821+00:00",
-    "risk_score": 18.7,
-    "total_findings": 5,
+    "scanned_at": "2026-09-25T14:40:04.597228+00:00",
+    "risk_score": 8.83,
+    "total_findings": 2,
     "severity_counts": {
-      "critical": 1,
-      "medium": 1,
-      "low": 3
+      "high": 1,
+      "low": 1
     },
-    "target": "http://localhost:3000"
+    "target": "http://localhost:8443"
   }
 ]
