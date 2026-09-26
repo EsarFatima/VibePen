@@ -1,0 +1,6 @@
+rules:
+  - id: detect-vibe-openai-keys
+    languages: [javascript]
+    message: "CRITICAL SECURITY FLAW: Found a hardcoded OpenAI secret key! AI models often hardcode credentials during rapid generation."
+    severity: ERROR
+    pattern-regex: sk-proj-[A-Za-z0-9]{32,}
