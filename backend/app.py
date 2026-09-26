@@ -9,6 +9,7 @@ from detector.dynamic.run_dynamic_dvwa import run_dvwa_checks
 from detector.scoring.scorer import build_scan_report
 from scan_history import get_scan_history, record_scan
 from target_detection import detect_target
+from scanners.network_scanner import scan_target_network
 
 
 app = FastAPI(title="VibePen Security Dashboard")
@@ -103,11 +104,16 @@ def scan(target: str = Query("http://localhost:3000", min_length=1)) -> dict:
     findings, account = run_generic_checks(target), None
   else:
     findings, account = [], None
+
+  # Run URL-to-IP resolution and Nmap port discovery
+  network_info = scan_target_network(target)
+
   report = build_scan_report(target, findings)
   report["target_type"] = profile.label
   report["supported"] = profile.supported
   report["message"] = profile.message
   report["authentication"] = {"checked": account is not None, "account": account}
+  report["network_info"] = network_info
   record_scan(report)
   return report
 
@@ -170,6 +176,17 @@ DASHBOARD_HTML = """<!doctype html>
     .timeline-date { padding-top:12px; color:var(--muted); font:700 .72rem Arial, sans-serif; }
     .timeline-score { margin-top:8px; font-size:1.55rem; }
     .timeline-findings { color:var(--muted); font: .78rem Arial, sans-serif; }
+    .network-card { background:var(--panel); border:1px solid var(--line); padding:22px; margin:0 0 28px; }
+    .network-head { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+    .network-meta { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; font: .88rem Arial, sans-serif; }
+    .meta-box { background:var(--paper); border:1px solid var(--line); padding:12px 14px; }
+    .meta-box label { display:block; color:var(--muted); font:700 .68rem Arial, sans-serif; text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px; }
+    .meta-box .val { font-size:1.05rem; font-weight:600; color:var(--ink); font-family:Consolas, monospace; }
+    .ports-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px; margin-top:14px; }
+    .port-item { background:var(--paper); border:1px solid var(--line); padding:10px 14px; display:flex; justify-content:space-between; align-items:center; }
+    .port-num { font:700 .9rem/1.2 Consolas, monospace; color:var(--ink); }
+    .port-svc { font:.75rem Arial, sans-serif; color:var(--muted); text-transform:uppercase; margin-top:2px; }
+    .port-open { background:#e1efe6; color:#236838; font:700 .68rem Arial, sans-serif; padding:3px 7px; border-radius:3px; }
     @media (max-width:760px) { main { padding-top:28px; } header { align-items:start; flex-direction:column; } .summary { grid-template-columns:1fr 1fr; } .metric:first-child { grid-column:span 2; } .finding-top { flex-direction:column; } }
   </style>
 </head>
@@ -185,6 +202,26 @@ DASHBOARD_HTML = """<!doctype html>
     <div class="metric"><label>Critical</label><div class="value" id="critical">--</div></div>
     <div class="metric"><label>High / medium</label><div class="value" id="highmedium">--</div></div>
   </section>
+
+  <section class="network-card" aria-label="Network Reconnaissance">
+    <div class="network-head">
+      <div>
+        <h2 style="font-size:1.35rem; margin:0 0 4px;">Host & Port Discovery (Nmap)</h2>
+        <div class="target" id="recon-engine">Scanner: Ready</div>
+      </div>
+      <div id="target-ip-badge" class="badge" style="background:var(--ink); font-size:.8rem; padding:8px 12px;">IP: Tracking...</div>
+    </div>
+    <div class="network-meta">
+      <div class="meta-box"><label>Domain / Host</label><div class="val" id="meta-host">--</div></div>
+      <div class="meta-box"><label>Resolved IP Address</label><div class="val" id="meta-ip">--</div></div>
+      <div class="meta-box"><label>Target Scope</label><div class="val" id="meta-scope">--</div></div>
+      <div class="meta-box"><label>Open Ports Found</label><div class="val" id="meta-ports">--</div></div>
+    </div>
+    <div id="ports-list-wrap">
+      <div class="empty" style="padding:20px; margin-top:14px;">Run a scan to discover open ports and services.</div>
+    </div>
+  </section>
+
   <section class="timeline" aria-label="Scan history"><div class="findings-head"><h2>Recent checks</h2><div class="target">Brief history for this website</div></div><div id="history" class="timeline-list"><div class="empty">No previous checks yet.</div></div></section>
   <div class="findings-head"><h2>What we found</h2><div id="status" role="status" aria-live="polite">Ready</div></div>
   <section id="findings"><div class="empty">Run a scan to inspect the live target.</div></section>
@@ -195,11 +232,35 @@ DASHBOARD_HTML = """<!doctype html>
   $('target-input').value = target;
   function render(report) {
     const counts = report.severity_counts || {};
+    const net = report.network_info || {};
     $('target').textContent = `${report.target_type || 'Website'}: ${report.target}`;
     $('risk').textContent = report.risk_score;
     $('total').textContent = report.total_findings;
     $('critical').textContent = counts.critical || 0;
     $('highmedium').textContent = `${counts.high || 0} / ${counts.medium || 0}`;
+
+    // Render Network Reconnaissance & IP Tracking
+    $('recon-engine').textContent = `Recon Engine: ${net.scanner || 'Nmap 7.991'}${net.duration_seconds ? ' (' + net.duration_seconds + 's)' : ''}`;
+    $('target-ip-badge').textContent = net.ip_address ? `IP: ${net.ip_address}` : 'IP: Unresolved';
+    $('meta-host').textContent = net.hostname || '--';
+    $('meta-ip').textContent = net.ip_address || 'Unresolved';
+    $('meta-scope').textContent = net.is_local ? 'Local Sandbox' : 'External Host';
+    $('meta-ports').textContent = (net.open_ports && net.open_ports.length) ? `${net.open_ports.length} Open` : 'None open';
+
+    if (net.open_ports && net.open_ports.length) {
+      $('ports-list-wrap').innerHTML = `<div class="ports-grid">` + net.open_ports.map(p => `
+        <div class="port-item">
+          <div>
+            <div class="port-num">${p.port}/${p.protocol}</div>
+            <div class="port-svc">${escapeHtml(p.service)}${p.product ? ' · ' + escapeHtml(p.product) : ''}</div>
+          </div>
+          <span class="port-open">OPEN</span>
+        </div>
+      `).join('') + `</div>`;
+    } else {
+      $('ports-list-wrap').innerHTML = `<div class="empty" style="padding:16px; margin-top:14px;">No open ports identified in the checked range.</div>`;
+    }
+
     $('findings').innerHTML = !report.supported ? `<div class="empty">${escapeHtml(report.message || 'This website is not supported yet.')}</div>` : report.findings.length ? report.findings.map((item) => `
       <article class="finding ${item.severity}">
         <div class="finding-top"><div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.description)}</p></div><span class="badge">${item.severity} · ${item.score}</span></div>
@@ -213,13 +274,15 @@ DASHBOARD_HTML = """<!doctype html>
       return `<article class="timeline-item"><div class="timeline-date">${escapeHtml(date)}</div><div class="timeline-score">${item.risk_score}</div><div class="timeline-findings">${item.total_findings} problem${item.total_findings === 1 ? '' : 's'}</div></article>`;
     }).join('') : '<div class="empty">No previous checks yet.</div>';
   }
-  async function loadHistory() {
-    const response = await fetch(`/api/history?target=${encodeURIComponent(target)}`);
-    if (response.ok) renderHistory((await response.json()).history || []);
+  function loadHistory() {
+    return fetch(`/api/history?target=${encodeURIComponent(target)}`)
+      .then(res => res.ok ? res.json() : {history: []})
+      .then(data => renderHistory(data.history || []))
+      .catch(() => {});
   }
   function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char])); }
   async function runScan() {
-    $('status').textContent = 'Checking the website...'; $('scan').disabled = true; $('scan-gear').hidden = false; $('scan-gear').classList.add('spinning'); $('scan-label').textContent = 'Scanning...';
+    $('status').textContent = 'Checking host & scanning website...'; $('scan').disabled = true; $('scan-gear').hidden = false; $('scan-gear').classList.add('spinning'); $('scan-label').textContent = 'Scanning...';
     try {
       target = $('target-input').value.trim().replace(/\/$/, '');
       if (!/^https?:\/\//i.test(target)) throw new Error('Enter a website address starting with http:// or https://.');

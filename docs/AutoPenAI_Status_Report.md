@@ -239,10 +239,28 @@ History is stored locally in `backend/scan_history.json`. The current page is a 
 
 ### Team ownership of current work
 
-- **Member 1 — Static analysis:** still outstanding. Build source-code checks for hardcoded secrets, unsafe SQL construction, `eval()`, unsafe HTML rendering, and insecure dependencies.
+- **Member 1 — Static analysis:** source-code checks for hardcoded secrets, unsafe SQL construction, `eval()`, unsafe HTML rendering, and insecure dependencies.
 - **Member 2A — Dynamic access and authentication:** DVWA and Juice Shop access-control, authentication, CORS, rate-limit, and cross-account work.
 - **Member 2B — Dynamic injection and behavior:** SQL injection, XSS, error disclosure, input reflection, and browser safety checks.
 - **Member 3 — Scoring and reporting:** severity, confidence, risk ranking, history, and the shared report contract.
+- **Network Reconnaissance & Host Discovery:** URL to IP tracking and automated port scanning via Nmap 7.991 and fallback socket scanning.
+
+### Network Reconnaissance & Nmap Integration — September 2026
+
+- **Module**: `backend/scanners/network_scanner.py`
+- **Capabilities**:
+  - Automatically parses URLs with or without scheme and port (`http://localhost:3000`, `scanme.nmap.org`).
+  - Resolves domain names to IPv4 addresses via `socket.gethostbyname`.
+  - Discovers open ports and services using `nmap.exe` (installed at `C:\Program Files (x86)\Nmap\nmap.exe`, Nmap 7.991).
+  - Uses XML output parsing (`-oX -`) for fast, deterministic extraction of open ports and services.
+  - Automatically includes URL-specific ports (e.g. 3000 for Juice Shop, 8080 for DVWA) alongside common web, database, and admin ports.
+  - Resilient design: falls back to native Python socket scanning if Nmap times out or is uninstalled on another machine.
+- **API & UI Integration**:
+  - `/api/scan` returns `network_info` containing hostname, IP address, scanner name, and open ports list.
+  - Interactive dashboard (`http://localhost:8000`) renders host & IP badges and an open ports grid in real time.
+- **Verified Results**:
+  - `http://localhost:3000` $\rightarrow$ IP `127.0.0.1`, detected open ports: 80, 3000, 3306, 8080 (0.7s - 1.5s scan time).
+  - `https://example.com` $\rightarrow$ IP `172.66.147.243`, detected open ports: 80, 443, 8080, 8443.
 
 ### Next steps
 
@@ -252,3 +270,4 @@ History is stored locally in `backend/scan_history.json`. The current page is a 
 4. Add history comparisons for new, fixed, and unchanged findings.
 5. Expand Juice Shop and DVWA endpoint coverage with regression tests. Juice Shop's anonymous and authenticated runner paths now have regression coverage.
 6. Replace the prototype dashboard with the final Figma UI while keeping the existing API contract.
+
