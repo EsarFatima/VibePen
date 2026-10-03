@@ -26,12 +26,13 @@ def scan_uploaded_code(file: UploadFile = File(...)) -> dict:
     extracts it safely, and processes it through our upgraded Semgrep Engine.
     """
     # Verify that the user uploaded a compressed file
-    if not file.filename.endswith('.zip'):
+    filename = os.path.basename(file.filename or '')
+    if not filename.lower().endswith('.zip'):
         return {"error": "Invalid format. Please upload a structured project .zip archive."}
         
     # Create a safe, temporary background directory to extract code into
     temp_dir = tempfile.mkdtemp()
-    zip_path = os.path.join(temp_dir, file.filename)
+    zip_path = os.path.join(temp_dir, filename)
     
     try:
         # Save the uploaded streaming file down to our temporary storage
@@ -42,6 +43,11 @@ def scan_uploaded_code(file: UploadFile = File(...)) -> dict:
         extract_dir = os.path.join(temp_dir, "extracted_source")
         os.makedirs(extract_dir, exist_ok=True)
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+          extract_root = os.path.abspath(extract_dir)
+          for member in zip_ref.infolist():
+            member_path = os.path.abspath(os.path.join(extract_root, member.filename))
+            if os.path.commonpath([extract_root, member_path]) != extract_root:
+              raise ValueError("Archive contains an unsafe path.")
             zip_ref.extractall(extract_dir)
             
         # Import your newly written Semgrep module dynamically
@@ -55,7 +61,7 @@ def scan_uploaded_code(file: UploadFile = File(...)) -> dict:
         risk_score = min(100, critical_count * 25)
         
         report = {
-            "target": file.filename,
+            "target": filename,
             "target_type": "Source Code Archive",
             "findings": findings,
             "total_findings": len(findings),

@@ -2,6 +2,7 @@ venv/
 __pycache__/
 *.pyc
 node_modules/
+dist/
 .env
 dataset/apps/*/node_modules
 *.log

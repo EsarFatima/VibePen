@@ -1,0 +1,10 @@
+{
+  "description": "Enables users to design and customize web pages effortlessly with guided templates, enhancing creativity and streamlining the design process.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

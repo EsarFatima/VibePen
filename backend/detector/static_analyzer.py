@@ -1,6 +1,7 @@
 import subprocess
 import json
 import os
+import shutil
 
 def analyze_directory(target_directory: str):
     """
@@ -19,6 +20,9 @@ def analyze_directory(target_directory: str):
         return [{"error": f"Configuration file missing at {rule_path}"}]
         
     print(f"[*] VibePen Engine running static analysis on: {target_directory}")
+
+    if shutil.which("semgrep") is None:
+        return [{"error": "Semgrep is not installed. Run: python -m pip install semgrep"}]
     
     # Execute Semgrep directly and request structured JSON output
     command = ["semgrep", "scan", f"--config={rule_path}", target_directory, "--json"]

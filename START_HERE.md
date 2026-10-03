@@ -1,6 +1,6 @@
 # VibePen Startup Guide
 
-VibePen has a React/Vite dashboard and a FastAPI backend. During development they run on separate ports. The vulnerable apps used for dynamic checks run in Docker.
+VibePen has a React/Vite dashboard in `frontend` and a FastAPI backend in `backend`. During development they run on separate ports. The vulnerable apps used for dynamic checks run in Docker.
 
 ## Dashboard architecture
 
@@ -110,7 +110,7 @@ Use a second PowerShell terminal for the frontend. Node.js 18 or 20 LTS is recom
 ### Install frontend packages
 
 ```powershell
-cd "D:\FAST\VibePen\Design a Page"
+cd "D:\FAST\VibePen\VibePen\frontend"
 npm install
 ```
 
@@ -137,7 +137,7 @@ Uvicorn running on http://0.0.0.0:8000
 In the second terminal:
 
 ```powershell
-cd "D:\FAST\VibePen\Design a Page"
+cd "D:\FAST\VibePen\VibePen\frontend"
 npm run dev -- --host 0.0.0.0
 ```
 
@@ -160,11 +160,11 @@ A successful response should include `findings`, `total_findings`, `severity_cou
 ### Build the frontend
 
 ```powershell
-cd "D:\FAST\VibePen\Design a Page"
+cd "D:\FAST\VibePen\VibePen\frontend"
 npm run build
 ```
 
-The production build is written to `Design a Page/dist`.
+The production build is written to `frontend/dist`.
 
 ## Edge cases and fixes
 
@@ -238,7 +238,7 @@ python -m uvicorn app:app --host 0.0.0.0 --port 8000
 Terminal 2, frontend:
 
 ```powershell
-cd "D:\FAST\VibePen\Design a Page"
+cd "D:\FAST\VibePen\VibePen\frontend"
 npm run dev -- --host 0.0.0.0
 ```
 

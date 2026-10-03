@@ -1,0 +1,119 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0..200&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', Consolas, monospace;
+
+  --color-bg: #F2F3F4;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #FFFFFF;
+  --color-border: #DDE2E7;
+  --color-muted: #6B6A62;
+  --color-text: #1C1B17;
+  --color-text-dim: #6B6A62;
+
+  --color-pass: #3F7D5C;
+  --color-low: #4A7A8C;
+  --color-medium: #B08A2E;
+  --color-high: #BC5A3A;
+  --color-critical: #A13D3D;
+  --color-na: #C6CBD1;
+  --color-skip: #C6CBD1;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #F2F3F4;
+  color: #1C1B17;
+  font-family: 'Inter', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.vibepen-app h1,
+.vibepen-app h2,
+.vibepen-app h3 {
+  font-family: 'Newsreader', Georgia, serif !important;
+  font-weight: 600 !important;
+}
+
+.vibepen-app .vibepen-wordmark {
+  font-family: 'Newsreader', Georgia, serif !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em;
+}
+
+.vibepen-app button,
+.vibepen-app input,
+.vibepen-app p,
+.vibepen-app label,
+.vibepen-app span,
+.vibepen-app div {
+  font-family: 'Inter', Arial, sans-serif !important;
+}
+
+.vibepen-app code,
+.vibepen-app pre {
+  font-family: 'JetBrains Mono', Consolas, monospace !important;
+}
+
+.vibepen-app .material-symbols-outlined {
+  font-family: 'Material Symbols Outlined' !important;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'liga';
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #2B4C7E;
+  outline-offset: 2px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes segmentScaleIn {
+  from { transform: scaleX(0); transform-origin: left center; }
+  to { transform: scaleX(1); transform-origin: left center; }
+}
+
+/* Skipped segment diagonal hatch */
+.seg-skipped {
+  background-color: #C6CBD1;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 3px,
+    rgba(255, 255, 255, 0.12) 3px,
+    rgba(255, 255, 255, 0.12) 5px
+  );
+}
+
+/* Hide scrollbar but allow scrolling */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #B7B3AA;
+  border-radius: 2px;
+}

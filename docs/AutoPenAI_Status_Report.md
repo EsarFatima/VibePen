@@ -271,3 +271,68 @@ History is stored locally in `backend/scan_history.json`. The current page is a 
 5. Expand Juice Shop and DVWA endpoint coverage with regression tests. Juice Shop's anonymous and authenticated runner paths now have regression coverage.
 6. Replace the prototype dashboard with the final Figma UI while keeping the existing API contract.
 
+---
+
+## 11. Current Status Update — October 2026
+
+This section supersedes older unfinished-status notes above where they conflict.
+
+### Repository layout
+
+- The shared repository is now standalone at `D:\VibePen`.
+- The old outer `Design a Page` copy and nested workspace wrapper were removed.
+- The single shared React/Vite frontend lives in `frontend/`.
+- The FastAPI and scanner implementation lives in `backend/`.
+- Git history and the `origin/main` remote are preserved.
+
+### Integrated frontend features
+
+The frontend in `frontend/src/App.tsx` now consumes the teammate backend work through one dashboard:
+
+- Dynamic findings, risk scores, severity counts, and scan history.
+- Host and port discovery from the `/api/scan` `network_info` response.
+- Source ZIP upload through `/api/scan/upload`.
+- Semgrep finding normalization, including uppercase static-analysis severities.
+- Clear handling when the backend is unavailable or when an API URL is entered instead of a target URL.
+
+The Vite development server proxies `/api` requests to `http://localhost:8000`.
+
+### Static scanning
+
+- Semgrep `1.179.0` is pinned in `backend/requirements.txt`.
+- `python -m detector.static_analyzer` runs successfully.
+- A clean result returns an empty findings list rather than a scanner runtime error.
+- Uploaded ZIP archives are restricted to `.zip` files and are checked for unsafe archive paths before extraction.
+
+### Verification completed
+
+- Frontend tests: `2 passed`.
+- Frontend production build: passed.
+- Backend syntax checks: passed.
+- `GET /api/scan?target=http://localhost:3000`: passed with findings and network data.
+- `GET /api/history`: passed.
+- Frontend `/api` proxy: HTTP 200.
+- Network scanner: passed using the Python socket fallback.
+- ZIP upload endpoint: returned a successful source-scan report.
+
+### Standard local run commands
+
+Backend:
+
+```powershell
+cd D:\VibePen\backend
+.\venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+Frontend:
+
+```powershell
+cd D:\VibePen\frontend
+npm install
+npm run dev -- --host 0.0.0.0
+```
+
+Open `http://localhost:8443/` and enter a target such as `http://localhost:3000`. Do not enter the backend API URL in the target field.
+
