@@ -99,6 +99,16 @@ npm install
 npm run dev
 ```
 
+### One-command startup
+
+After the one-time setup above, friends can use the repository scripts instead of opening separate terminals:
+
+1. Double-click `start.bat` to start Docker targets, the FastAPI backend, and the Vite frontend.
+2. Open http://localhost:8443/ if it does not open automatically.
+3. Stop the backend and frontend terminal windows when finished. Stop Docker targets with `docker stop juice-shop dvwa`.
+
+The root `setup.bat` performs the Python virtual-environment/dependency setup and `npm install` once.
+
 **Do not commit `node_modules/` or `venv/`** — these are already in `.gitignore`. If you accidentally commit them, tell the team immediately so we can clean the git history before it grows huge.
 
 ## 7. Confirm Everything Works

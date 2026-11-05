@@ -1,5 +1,31 @@
 # VibePen Startup Guide
 
+## Fastest Windows setup
+
+After cloning the repository, install Python 3.11, Node.js 18/20 LTS, and Docker Desktop. Then double-click [`setup.bat`](./setup.bat), or open PowerShell in the repository folder and run this once:
+
+```powershell
+.\setup.ps1
+```
+
+After setup, start the complete project any time by double-clicking [`start.bat`](./start.bat), or running:
+
+```powershell
+.\start.bat
+```
+
+This automatically starts or reuses the Juice Shop and DVWA Docker containers, opens separate backend and frontend terminals, and opens the dashboard at http://localhost:8443. Stop the two terminal windows to stop the backend and frontend. Docker containers can be stopped with:
+
+```powershell
+docker stop juice-shop dvwa
+```
+
+If PowerShell blocks `setup.ps1`, run it through the included `setup.bat`, or use:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
 VibePen has a React/Vite dashboard in `frontend` and a FastAPI backend in `backend`. During development they run on separate ports. The vulnerable apps used for dynamic checks run in Docker.
 
 ## Dashboard architecture
