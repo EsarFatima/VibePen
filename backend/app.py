@@ -7,7 +7,7 @@ from detector.dynamic.run_dynamic_juice_shop import run_juice_shop_checks
 from detector.dynamic.generic_checks import run_generic_checks
 from detector.dynamic.run_dynamic_dvwa import run_dvwa_checks
 from detector.scoring.scorer import build_scan_report
-from scan_history import get_scan_history, record_scan
+from scan_history import delete_scan, get_all_scan_history, get_scan, get_scan_history, record_scan
 from target_detection import detect_target
 from scanners.network_scanner import scan_target_network
 
@@ -63,6 +63,7 @@ def scan_uploaded_code(file: UploadFile = File(...)) -> dict:
         report = {
             "target": filename,
             "target_type": "Source Code Archive",
+            "scan_type": "ZIP",
             "findings": findings,
             "total_findings": len(findings),
             "risk_score": risk_score,
@@ -71,7 +72,8 @@ def scan_uploaded_code(file: UploadFile = File(...)) -> dict:
         
         # Save the report to the global history file just like their code does
         try:
-            record_scan(report)
+            entry = record_scan(report)
+            report["id"] = entry["id"]
         except Exception:
             pass # Keep execution alive if history recorder differs slightly
             
@@ -116,17 +118,46 @@ def scan(target: str = Query("http://localhost:3000", min_length=1)) -> dict:
 
   report = build_scan_report(target, findings)
   report["target_type"] = profile.label
+  report["scan_type"] = "URL"
   report["supported"] = profile.supported
   report["message"] = profile.message
   report["authentication"] = {"checked": account is not None, "account": account}
   report["network_info"] = network_info
-  record_scan(report)
+  entry = record_scan(report)
+  report["id"] = entry["id"]
   return report
 
 
 @app.get("/api/history")
 def history(target: str = Query("http://localhost:3000", min_length=1)) -> dict:
   return {"target": target.rstrip("/"), "history": get_scan_history(target)}
+
+
+@app.get("/api/history/all")
+def all_history() -> dict:
+  return {"history": get_all_scan_history()}
+
+
+@app.get("/api/history/{scan_id}")
+def history_report(scan_id: str) -> dict:
+  entry = get_scan(scan_id)
+  if entry is None:
+    return {"error": "Scan not found."}
+  report = dict(entry.get("report", {}))
+  report.update({
+      "id": entry["id"],
+      "scanned_at": entry["scanned_at"],
+      "target": entry["target"],
+      "target_type": entry.get("target_type", report.get("target_type", "URL")),
+  })
+  return report
+
+
+@app.delete("/api/history/{scan_id}")
+def remove_history(scan_id: str) -> dict:
+  if not delete_scan(scan_id):
+    return {"error": "Scan not found."}
+  return {"deleted": True}
 
 
 @app.get("/", response_class=HTMLResponse)
