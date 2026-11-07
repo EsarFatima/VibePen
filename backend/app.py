@@ -18,6 +18,11 @@ from scanners.network_scanner import scan_target_network
 app = FastAPI(title="VibePen Security Dashboard")
 
 import db, auth
+import domain_service
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from auth import current_user, optional_user
+from db import User, get_db
 db.Base.metadata.create_all(db.engine)
 app.include_router(auth.router)
 
@@ -97,8 +102,12 @@ def scan_uploaded_code(file: UploadFile = File(...)) -> dict:
 
 
 @app.get("/api/scan")
-def scan(target: str = Query("http://localhost:3000", min_length=1)) -> dict:
-  if not verification.is_authorized(target):
+def scan(
+  target: str = Query("http://localhost:3000", min_length=1),
+  user: User | None = Depends(optional_user),
+  session: Session = Depends(get_db),
+) -> dict:
+  if not domain_service.is_authorized(session, user.id if user else None, target):
     raise HTTPException(status_code=403, detail="Domain ownership has not been verified. Verify this domain before scanning it.")
   profile = detect_target(target)
   if profile.kind == "juice_shop":
@@ -143,32 +152,32 @@ class VerifyIn(BaseModel):
   method: str = "dns"
 
 @app.post("/api/domains")
-def add_domain(body: DomainIn) -> dict:
+def add_domain(body: DomainIn, user: User = Depends(current_user), session: Session = Depends(get_db)) -> dict:
   try:
-    return verification.issue_challenge(body.domain)
+    return domain_service.issue_challenge(session, user.id, body.domain)
   except ValueError as error:
     raise HTTPException(status_code=400, detail=str(error))
 
 @app.get("/api/domains")
-def get_domains() -> dict:
-  return {"domains": verification.list_domains()}
+def get_domains(user: User = Depends(current_user), session: Session = Depends(get_db)) -> dict:
+  return {"domains": domain_service.list_domains(session, user.id)}
 
 @app.post("/api/domains/{domain}/verify")
-def verify_domain(domain: str, body: VerifyIn) -> dict:
+def verify_domain(domain: str, body: VerifyIn, user: User = Depends(current_user), session: Session = Depends(get_db)) -> dict:
   try:
-    return verification.verify_domain(domain, body.method)
+    return domain_service.verify_domain(session, user.id, domain, body.method)
   except ValueError as error:
     raise HTTPException(status_code=400, detail=str(error))
   except KeyError:
     raise HTTPException(status_code=404, detail="Add this domain first to get a verification token.")
 
 @app.delete("/api/domains/{domain}")
-def delete_domain(domain: str) -> dict:
+def delete_domain(domain: str, user: User = Depends(current_user), session: Session = Depends(get_db)) -> dict:
   try:
-    return {"deleted": verification.remove_domain(domain)}
+    return {"deleted": domain_service.remove_domain(session, user.id, domain)}
   except ValueError as error:
     raise HTTPException(status_code=400, detail=str(error))
-  
+
 @app.get("/api/history")
 def history(target: str = Query("http://localhost:3000", min_length=1)) -> dict:
   return {"target": target.rstrip("/"), "history": get_scan_history(target)}

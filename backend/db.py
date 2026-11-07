@@ -1,7 +1,7 @@
 import datetime as dt
 import os
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, create_engine
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, UniqueConstraint, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 DB_URL = os.getenv("DATABASE_URL", "sqlite:///vibepen.db")
@@ -41,6 +41,21 @@ class EmailToken(Base):
     token_hash = Column(String(64), unique=True, nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     expires_at = Column(DateTime, nullable=False)
+
+
+class Domain(Base):
+    __tablename__ = "domains"
+    __table_args__ = (UniqueConstraint("user_id", "domain", name="uq_domains_user_domain"),)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    domain = Column(String(253), nullable=False)
+    token = Column(String(64), nullable=False)
+    status = Column(String(16), nullable=False, default="pending")
+    method = Column(String(8))
+    error = Column(String(255))
+    verified_at = Column(DateTime)
+    expires_at = Column(DateTime)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
 
 
 def get_db():

@@ -2,24 +2,41 @@
 
 **Project:** VibePen, a scanner for vibe-coded websites (FYP F26-077, FAST Lahore)
 **Author:** Esar Fatima
-
+**Deadline:** 4 December 2026
 
 ## 1. Summary
 
-Today's work had two parts. First, I finished checking the domain ownership verification feature and fixed my local environment. Second, I replaced the simulated login with a real account system backed by PostgreSQL, including email verification.
+Today's work had three parts. First, I checked the domain ownership verification feature and fixed my local environment. Second, I replaced the simulated login with a real account system backed by PostgreSQL, including email verification. Third, I added a third domain verification method (a meta tag in the homepage) to the backend, with unit tests.
 
 Before today, signing in only stored whatever email was typed into the browser's `localStorage`. There was no user table, no password check and no server-side session. Now accounts, passwords, sessions and email confirmation are handled by the backend, and the whole sign-up, confirm and sign-in flow was tested end to end in the browser.
 
-## 2. Domain ownership verification: checks and fixes
+## 2. Domain ownership verification
+
+**Checks and corrections**
 
 - Confirmed the DNS TXT record name is `_vibepen-verify.<domain>` (with the underscore) in both `backend/verification.py` and the UI text. An earlier handoff note said there was no underscore. That note was wrong, and the code and UI agree with each other.
-- Found that the **Meta tag** method is supported by the backend but is **not yet offered in the UI**. The method tabs only show DNS TXT and File upload, while the "how verification works" text still mentions a meta tag. This is still open (see section 8).
 - Confirmed that `localhost` and `127.0.0.1` are trusted automatically. The default scan target `http://localhost:3000` is Juice Shop (confirmed with `docker ps`), which is why it showed "Domain verified".
+- Found that an earlier handoff note was wrong about the meta tag: `verification.py` only supported `dns` and `file`. The meta method did not exist in the backend, even though the UI's "how verification works" text mentioned it.
+
+**Meta tag method (new, backend)**
+
+The owner adds `<meta name="vibepen-verification" content="<token>">` to the `<head>` of the homepage. `_check_meta` in `backend/verification.py` verifies it with these safeguards:
+
+- Refuses private and internal addresses before making any request (same protection as the file check).
+- Follows only same-host redirects, up to 3. A redirect to another host (for example `example.com` to `www.example.com`, or anything external) is refused, so the owner must register the host they actually serve.
+- Reads at most 512 KB of the page, and accepts the tag only if it appears before `<body>`, so a tag placed in page content does not count.
+- Reads the HTML the server sends and does not run JavaScript, so on React or Vite sites the tag must be in `index.html`, not in a component. The failure message tells the user this.
+- A meta tag proves control of one host only, so (like the file method) it does not authorize subdomains. A DNS record still covers the whole zone.
+- `verify_domain` now accepts `dns`, `file` or `meta`, and the challenge response includes a ready-made `meta_tag` string.
+
+**Meta tag method (UI)**
+
+The UI tab, method mapping and instruction text are prepared as five small edits to `frontend/src/TemplateHome.tsx` (add `'Meta tag'` to the method type and tab list, map it to `meta`, show the tag as the copyable value). They need to be applied and checked in the browser (see section 9).
 
 ## 3. Environment fixes
 
 - The backend virtual environment was created when the project folder was named `AutoPen`, so `pip.exe` points at a path that no longer exists. Fix: always use `python -m pip ...` inside this venv, or recreate the venv.
-- Installed missing packages (`dnspython`, `pytest`). I did not record the result of the 15 verification unit tests in this session, so they should be re-run before the report is finalised.
+- Installed missing packages (`dnspython`, `pytest`).
 - `http://0.0.0.0:8000` cannot be opened in a browser. Use `http://localhost:8000/docs`.
 - A leftover uvicorn process kept `vibepen.db` locked. Stopped the stray Python processes. Port 8000 is now free.
 
@@ -79,7 +96,9 @@ Run `python -m pip show sqlalchemy argon2-cffi psycopg` and make sure `requireme
 
 ## 7. Testing performed
 
-Manual end-to-end test in the browser:
+**Automated.** `python -m pytest test_verification.py test_verification_meta.py -q` gives **21 passed**: 9 existing verification tests plus 12 new tests for the meta method. The new tests use fake HTTP responses and cover attribute order and case, wrong token, tag inside `<body>` (ignored), private hosts (no request made), same-host redirects, off-host redirects, redirect loops, the 512 KB size limit, end-to-end verification with its scope, the failure message, and rejection of unknown methods.
+
+**Manual, in the browser.** End-to-end account flow:
 
 1. Sign up with a new email, which showed "Check your email to confirm".
 2. Copied the confirmation link from the backend terminal (development mailer).
@@ -87,7 +106,7 @@ Manual end-to-end test in the browser:
 4. Opening the link confirmed the email and signed in.
 5. Signing out and signing in again worked, and a wrong password was rejected.
 
-Result: all steps behaved as expected. Direct API checks were also done at `/docs` (register, me, logout, login, duplicate email, short password), and the stored password hash was inspected in the database.
+All steps behaved as expected. Direct API checks were also done at `/docs` (register, me, logout, login, duplicate email, short password), and the stored password hash was inspected in the database.
 
 ## 8. Known gaps (to state in the final report)
 
@@ -103,14 +122,16 @@ Result: all steps behaved as expected. Direct API checks were also done at `/doc
 **Not yet connected to accounts**
 - `/api/domains`, `/api/history` and `/api/scan` do not require a login, and records have no `user_id`. Domain verification is still global, and verified domains are still stored in `verified_domains.json` rather than the database.
 - Settings "Delete account" only clears the browser. It does not delete the account on the server.
-- The Meta tag verification method is missing from the UI.
 - Forgot-password is still a simulated screen.
+
+**Verification**
+- The DNS, file and meta checks have only been tested with mocks. None has been run against a live domain yet.
+- The meta tag UI tab still needs to be applied and checked in the browser.
 
 ## 9. Next steps
 
-1. Require login on `/api/domains` and `/api/history`, add `user_id` to those records and move verified domains into PostgreSQL.
-2. Make account deletion real and finish the forgot-password flow.
-3. Add the Meta tag option to the verification UI.
+1. Apply and test the Meta tag tab in the UI, then try all three methods against a real test site (for example a small static page on Netlify or GitHub Pages).
+2. Require login on `/api/domains` and `/api/history`, add `user_id` to those records and move verified domains into PostgreSQL.
+3. Make account deletion real and finish the forgot-password flow.
 4. Crawler and generic XSS/SQLi checks so unknown sites get real testing.
 5. Semgrep rules and static-type mapping in `SCORING_RULES`.
-6. Run the real DNS, file and meta checks against a live domain (currently tested with mocks only).

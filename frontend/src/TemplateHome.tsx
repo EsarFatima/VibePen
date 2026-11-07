@@ -38,7 +38,7 @@ export interface HistoryEntry {
   report?: ScanReport
 }
 type DomainStatus = 'pending' | 'verified' | 'expired' | 'failed'
-type VerificationMethod = 'DNS TXT' | 'File upload'
+type VerificationMethod = 'DNS TXT' | 'File upload' | 'Meta tag'
 interface DomainRecord {
   domain: string
   status: DomainStatus
@@ -110,27 +110,28 @@ function currentUser() {
   return JSON.parse(localStorage.getItem('vibepen-user') ?? 'null') as { email?: string; name?: string } | null
 }
 
-function domainStorageKey() {
-  const user = currentUser()
-  return user?.email ? `vibepen-domains:${user.email.toLowerCase()}` : 'vibepen-guest-domains'
+
+
+interface ServerDomain { domain: string; status: DomainStatus; token: string; method?: string | null; verified_at?: string | null; expires_at?: string | null; error?: string | null }
+const METHOD_LABEL: Record<string, VerificationMethod> = { dns: 'DNS TXT', file: 'File upload', meta: 'Meta tag' }
+
+function toDomainRecord(item: ServerDomain): DomainRecord {
+  return { domain: item.domain, status: item.status, token: item.token, method: item.method ? METHOD_LABEL[item.method] : undefined, verifiedAt: item.verified_at ?? undefined, expiresAt: item.expires_at ?? undefined, error: item.error ?? undefined }
 }
 
-function readVerifiedDomains() {
-  const user = currentUser()
-  const storage = user?.email ? localStorage : sessionStorage
-  const raw = JSON.parse(storage.getItem(domainStorageKey()) ?? '[]') as Array<string | Partial<DomainRecord>>
-  const now = Date.now()
-  return raw.map(item => typeof item === 'string'
-    ? { domain: item, status: 'verified' as DomainStatus, token: item.replace(/[^a-z0-9]/gi, '').slice(0, 12) }
-    : { domain: item.domain ?? '', status: item.status ?? (item.expiresAt && new Date(item.expiresAt).getTime() <= now ? 'expired' : 'verified'), method: item.method, verifiedAt: item.verifiedAt, expiresAt: item.expiresAt, token: item.token ?? item.domain?.replace(/[^a-z0-9]/gi, '').slice(0, 12) ?? '', error: item.error })
-    .filter(item => item.domain)
+async function fetchDomains(): Promise<DomainRecord[] | null> {
+  try {
+    const response = await fetch('/api/domains')
+    if (!response.ok) return null
+    const data = await response.json() as { domains?: ServerDomain[] }
+    return (data.domains ?? []).map(toDomainRecord)
+  } catch { return null }
 }
 
-function isVerifiedDomain(value: string) {
-  const domains = readVerifiedDomains().map(item => item.domain)
+function isVerifiedHost(domains: DomainRecord[], value: string) {
   try {
     const hostname = new URL(value).hostname.toLowerCase()
-    return domains.some(domain => hostname === domain.toLowerCase() || hostname.endsWith(`.${domain.toLowerCase()}`))
+    return domains.some(record => record.status === 'verified' && (hostname === record.domain || (record.method === 'DNS TXT' && hostname.endsWith(`.${record.domain}`))))
   } catch { return false }
 }
 
@@ -307,7 +308,7 @@ function AuthPage({ initialSignup = false }: { initialSignup?: boolean }) {
     setSubmitting(false)
   }
   function switchMode(nextSignup: boolean) { setSignup(nextSignup); setErrors({}); setGeneralError(''); setCreated(false) }
-   async function signOutForAuth() { try { await fetch('/api/auth/logout', { method: 'POST' }) } catch { /* offline: still clear locally */ } localStorage.removeItem('vibepen-user'); setSignedInUser(null); setSignedOutMessage("You've been signed out.") }
+  async function signOutForAuth() { try { await fetch('/api/auth/logout', { method: 'POST' }) } catch { /* offline: still clear locally */ } localStorage.removeItem('vibepen-user'); setSignedInUser(null); setSignedOutMessage("You've been signed out.") }
   async function resendVerification() { try { await fetch('/api/auth/resend-verification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim() }) }) } catch { /* ignore */ } setResent(true) }
   if (signedInUser?.email) return <AuthShell mode={signup ? 'signup' : 'signin'}><SignedInCard user={signedInUser as { email: string; name?: string }} onSignOut={signOutForAuth} /></AuthShell>
   if (created) return <AuthShell mode="signup"><div className="auth-success"><span className="auth-success-icon">[ok]</span><p className="template-section-label">ACCOUNT CREATED</p><h1>Check your email to confirm</h1><p>We sent a confirmation link to <strong>{email}</strong>. Confirm your address to finish setting up VibePen.</p><a className="auth-primary" href="/login">Back to sign in</a></div></AuthShell>
@@ -365,7 +366,9 @@ function TopNav() {
 function SettingsPage() {
   const user = JSON.parse(localStorage.getItem('vibepen-user') ?? 'null') as { email?: string; name?: string } | null
   const guest = !user?.email
-  const domains: string[] = readVerifiedDomains().map(item => item.domain)
+  const [serverDomains, setServerDomains] = useState<DomainRecord[]>([])
+  useEffect(() => { if (user?.email) void fetchDomains().then(list => list && setServerDomains(list)) }, [])
+  const domains: string[] = serverDomains.filter(item => item.status === 'verified').map(item => item.domain)
   const [credentials, setCredentials] = useState({ userA: '', userB: '', useByDefault: false })
   const [reportFormat, setReportFormat] = useState('pdf')
   const [speed, setSpeed] = useState('normal')
@@ -392,8 +395,9 @@ function SettingsPage() {
 
 function DomainsPage() {
   const signedIn = Boolean(currentUser()?.email)
-  const storage = signedIn ? localStorage : sessionStorage
-  const [domains, setDomains] = useState<DomainRecord[]>(readVerifiedDomains())
+  const [domains, setDomains] = useState<DomainRecord[]>([])
+  const [loading, setLoading] = useState(signedIn)
+  useEffect(() => { if (!signedIn) return; void fetchDomains().then(list => { if (list) setDomains(list); setLoading(false) }) }, [])
   const [domain, setDomain] = useState('')
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -402,22 +406,29 @@ function DomainsPage() {
   const [removeTarget, setRemoveTarget] = useState<string | null>(null)
   const [howOpen, setHowOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const save = (next: DomainRecord[]) => { setDomains(next); storage.setItem(domainStorageKey(), JSON.stringify(next)) }
+  const save = (next: DomainRecord[]) => setDomains(next)
   const normalizeDomain = (value: string) => value.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '').replace(/\.$/, '').toLowerCase()
     async function addDomain(event: FormEvent) {
     event.preventDefault()
+    if (!signedIn) { setError('Sign in to add domains.'); return }
     const normalized = normalizeDomain(domain)
     if (!/^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(normalized)) { setError('Enter a valid domain, such as example.com.'); return }
     if (domains.some(item => item.domain === normalized)) { setError('This domain is already in your list.'); return }
     const response = await fetch('/api/domains', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ domain: normalized }) })
+    if (response.status === 401) { setError('Sign in to add domains.'); return }
     if (!response.ok) { setError('Could not add this domain.'); return }
     const data = await response.json()
-    save([...domains, { domain: normalized, status: 'pending', token: data.token }]); setDomain(''); setError(''); setExpanded(normalized)
+    save([...domains, toDomainRecord(data)]); setDomain(''); setError(''); setExpanded(normalized)
   }
-  function removeDomain() { if (!removeTarget) return; save(domains.filter(item => item.domain !== removeTarget)); setRemoveTarget(null); if (expanded === removeTarget) setExpanded(null) }
+  async function removeDomain() {
+    if (!removeTarget) return
+    const response = await fetch(`/api/domains/${encodeURIComponent(removeTarget)}`, { method: 'DELETE' })
+    if (!response.ok) { setError('Could not remove this domain.'); setRemoveTarget(null); return }
+    save(domains.filter(item => item.domain !== removeTarget)); setRemoveTarget(null); if (expanded === removeTarget) setExpanded(null)
+  }
     async function verifyDomain(record: DomainRecord) {
     setVerifying(true); setError('')
-    const response = await fetch(`/api/domains/${record.domain}/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: method === 'DNS TXT' ? 'dns' : 'file' }) })
+    const response = await fetch(`/api/domains/${record.domain}/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: ({ 'DNS TXT': 'dns', 'File upload': 'file', 'Meta tag': 'meta' } as Record<VerificationMethod, string>)[method] }) })
     const data = response.ok ? await response.json() : null
     const next: DomainRecord = data?.status === 'verified'
       ? { ...record, status: 'verified', method, verifiedAt: data.verified_at, expiresAt: data.expires_at, error: undefined }
@@ -428,8 +439,8 @@ function DomainsPage() {
   const verifiedCount = domains.filter(item => item.status === 'verified').length
   const pendingCount = domains.filter(item => item.status === 'pending').length
   const copy = (value: string) => { void navigator.clipboard?.writeText(value) }
-  const verificationValue = (record: DomainRecord) => `vibepen-verification=${record.token}`
-  return <main className="template-home"><TopNav /><section className="template-body template-page domains-page"><div className="template-section-label">SCAN ACCESS</div><h1>Verified domains</h1><p className="template-page-intro">Prove you own a site before scanning it. Verifications expire after 30 days.</p><p className="domains-summary">{verifiedCount} verified · {pendingCount} pending</p>{!signedIn && <div className="guest-save-banner domain-guest-prompt" role="status"><span>Guest verification lasts only for this browser session. Sign in to keep domains.</span><button onClick={() => navigate('/login')}>Sign in</button></div>}<div className="domain-info-banner"><span className="material-symbols-outlined">info</span><span>Localhost and demo targets don’t need verification.</span></div><section className="domain-manager"><form className="domain-add" onSubmit={addDomain}><div><input ref={inputRef} placeholder="example.com" value={domain} onChange={event => { setDomain(event.target.value); setError('') }} aria-invalid={Boolean(error)} />{error && <small className="domain-inline-error">{error}</small>}</div><button type="submit">Add domain</button></form><small className="domain-helper">Enter a domain without https://</small></section>{domains.length === 0 ? <div className="domains-empty"><span className="material-symbols-outlined">shield</span><h2>No verified domains yet</h2><p>Verification confirms that you own the site before a scan can begin.</p><button onClick={() => inputRef.current?.focus()}>Add your first domain</button></div> : <div className="domain-list">{domains.map(record => { const days = daysUntil(record.expiresAt); const value = verificationValue(record); return <article className="domain-card" key={record.domain}><div className="domain-card-main"><div className="domain-card-title"><h2>{record.domain}</h2><span className={`domain-badge ${record.status}`}>{record.status}</span></div><div className="domain-card-meta"><span>Method: {record.method ?? 'Not verified'}</span><span>{record.verifiedAt ? `Verified ${new Date(record.verifiedAt).toLocaleDateString()}` : 'Verification required'}</span>{record.expiresAt && <span className={days < 7 ? 'expires-soon' : ''}>Expires in {Math.max(0, days)} days</span>}</div>{record.error && <p className="domain-error">{record.error}</p>}</div>  <div className="domain-card-actions">{record.status === 'verified' && <button className="domain-icon-action" title="Scan now" aria-label={`Scan ${record.domain} now`} onClick={() => navigate(`/?rescan=${encodeURIComponent(`https://${record.domain}`)}`)}><span className="material-symbols-outlined">play_arrow</span></button>}<button onClick={() => { setExpanded(record.domain); setMethod(record.method ?? 'DNS TXT') }}>Re-verify</button><button className="domain-remove-action" onClick={() => setRemoveTarget(record.domain)}>Remove</button></div>{expanded === record.domain && <div className="domain-verification-panel"><div className="domain-tabs">{(['DNS TXT', 'File upload'] as VerificationMethod[]).map(item => <button key={item} className={method === item ? 'active' : ''} onClick={() => setMethod(item)}>{item}</button>)}</div><p>{method === 'DNS TXT' ? `Add a TXT record named _vibepen-verify.${record.domain} with this value.` : `Upload a text file at https://${record.domain}/.well-known/vibepen-verify.txt containing exactly this text.`}</p><div className="domain-copy-value"><code>{value}</code><button title="Copy verification value" aria-label="Copy verification value" onClick={() => copy(value)}><span className="material-symbols-outlined">content_copy</span></button></div>{method === 'DNS TXT' && <small>DNS changes may take a few minutes.</small>}<button className="domain-verify-button" disabled={verifying} onClick={() => void verifyDomain(record)}>{verifying ? 'Verifying...' : 'Verify now'}</button></div>}</article> })}</div>}<button className="domains-how-toggle" onClick={() => setHowOpen(value => !value)}>{howOpen ? 'Hide' : 'Show'} how verification works</button>{howOpen && <div className="domains-how"><p><b>1.</b> Add your domain and choose a verification method.</p><p><b>2.</b> Place the TXT record, meta tag, or file on your site.</p><p><b>3.</b> Verify the method, then start scanning.</p></div>}</section>{removeTarget && <div className="settings-modal-backdrop" role="dialog" aria-modal="true"><div className="settings-modal"><h2>Remove {removeTarget}?</h2><p>This will remove the domain from your verification list.</p><div className="settings-modal-actions"><button className="settings-secondary" onClick={() => setRemoveTarget(null)}>Cancel</button><button className="settings-danger-button" onClick={removeDomain}>Remove domain</button></div></div></div>}</main>
+  const verificationValue = (record: DomainRecord) => method === 'Meta tag' ? `<meta name="vibepen-verification" content="${record.token}">` : `vibepen-verification=${record.token}`
+  return <main className="template-home"><TopNav /><section className="template-body template-page domains-page"><div className="template-section-label">SCAN ACCESS</div><h1>Verified domains</h1><p className="template-page-intro">Prove you own a site before scanning it. Verifications expire after 30 days.</p><p className="domains-summary">{verifiedCount} verified · {pendingCount} pending</p>{!signedIn && <div className="guest-save-banner domain-guest-prompt" role="status"><span>Sign in to add and verify domains. Verification is tied to your account.</span><button onClick={() => navigate('/login')}>Sign in</button></div>}<div className="domain-info-banner"><span className="material-symbols-outlined">info</span><span>Localhost and demo targets don’t need verification.</span></div><section className="domain-manager"><form className="domain-add" onSubmit={addDomain}><div><input ref={inputRef} placeholder="example.com" value={domain} onChange={event => { setDomain(event.target.value); setError('') }} aria-invalid={Boolean(error)} />{error && <small className="domain-inline-error">{error}</small>}</div><button type="submit">Add domain</button></form><small className="domain-helper">Enter a domain without https://</small></section>{loading ? <p className="template-page-intro">Loading your domains...</p> : domains.length === 0 ? <div className="domains-empty"><span className="material-symbols-outlined">shield</span><h2>No verified domains yet</h2><p>Verification confirms that you own the site before a scan can begin.</p><button onClick={() => inputRef.current?.focus()}>Add your first domain</button></div> : <div className="domain-list">{domains.map(record => { const days = daysUntil(record.expiresAt); const value = verificationValue(record); return <article className="domain-card" key={record.domain}><div className="domain-card-main"><div className="domain-card-title"><h2>{record.domain}</h2><span className={`domain-badge ${record.status}`}>{record.status}</span></div><div className="domain-card-meta"><span>Method: {record.method ?? 'Not verified'}</span><span>{record.verifiedAt ? `Verified ${new Date(record.verifiedAt).toLocaleDateString()}` : 'Verification required'}</span>{record.expiresAt && <span className={days < 7 ? 'expires-soon' : ''}>Expires in {Math.max(0, days)} days</span>}</div>{record.error && <p className="domain-error">{record.error}</p>}</div>  <div className="domain-card-actions">{record.status === 'verified' && <button className="domain-icon-action" title="Scan now" aria-label={`Scan ${record.domain} now`} onClick={() => navigate(`/?rescan=${encodeURIComponent(`https://${record.domain}`)}`)}><span className="material-symbols-outlined">play_arrow</span></button>}<button onClick={() => { setExpanded(record.domain); setMethod(record.method ?? 'DNS TXT') }}>Re-verify</button><button className="domain-remove-action" onClick={() => setRemoveTarget(record.domain)}>Remove</button></div>{expanded === record.domain && <div className="domain-verification-panel"><div className="domain-tabs">{(['DNS TXT', 'File upload', 'Meta tag'] as VerificationMethod[]).map(item => <button key={item} className={method === item ? 'active' : ''} onClick={() => setMethod(item)}>{item}</button>)}</div><p>{method === 'DNS TXT' ? `Add a TXT record named _vibepen-verify.${record.domain} with this value.` : method === 'File upload' ? `Upload a text file at https://${record.domain}/.well-known/vibepen-verify.txt containing exactly this text.` : `Paste this tag inside the <head> of your homepage at https://${record.domain}/ so it appears in the page source.`}</p><div className="domain-copy-value"><code>{value}</code><button title="Copy verification value" aria-label="Copy verification value" onClick={() => copy(value)}><span className="material-symbols-outlined">content_copy</span></button></div>{method === 'DNS TXT' && <small>DNS changes may take a few minutes.</small>}<button className="domain-verify-button" disabled={verifying} onClick={() => void verifyDomain(record)}>{verifying ? 'Verifying...' : 'Verify now'}</button></div>}</article> })}</div>}<button className="domains-how-toggle" onClick={() => setHowOpen(value => !value)}>{howOpen ? 'Hide' : 'Show'} how verification works</button>{howOpen && <div className="domains-how"><p><b>1.</b> Add your domain and choose a verification method.</p><p><b>2.</b> Place the TXT record, meta tag, or file on your site.</p><p><b>3.</b> Verify the method, then start scanning.</p></div>}</section>{removeTarget && <div className="settings-modal-backdrop" role="dialog" aria-modal="true"><div className="settings-modal"><h2>Remove {removeTarget}?</h2><p>This will remove the domain from your verification list.</p><div className="settings-modal-actions"><button className="settings-secondary" onClick={() => setRemoveTarget(null)}>Cancel</button><button className="settings-danger-button" onClick={removeDomain}>Remove domain</button></div></div></div>}</main>
 }
 
 export default function TemplateHome() {
@@ -459,7 +470,9 @@ export default function TemplateHome() {
   }
   useEffect(() => { void loadHistory() }, [])
   useEffect(() => { if (path.startsWith('/scans/')) { const scanId = path.split('/')[2]; const local = guestHistory().find(entry => entry.id === scanId); if (local?.report) { setReport(local.report); return } void fetch(`/api/history/${scanId}`).then(response => response.ok ? response.json() : null).then(data => data && setReport(data)) } }, [path])
-  useEffect(() => { setVerified(isSandboxDomain(target) || isVerifiedDomain(target)) }, [target])
+  const [myDomains, setMyDomains] = useState<DomainRecord[]>([])
+  useEffect(() => { if (!currentUser()?.email) { setMyDomains([]); return } void fetchDomains().then(list => { if (list) setMyDomains(list) }) }, [path])
+  useEffect(() => { setVerified(isSandboxDomain(target) || isVerifiedHost(myDomains, target)) }, [target, myDomains])
   async function runScan(event: FormEvent) { event.preventDefault(); if (scanning || !target.trim() || !verified) return; setScanning(true); setProgress(5); setStatus('Scanning target...'); const checks = ['Resolving target', 'Checking headers', 'Testing authentication', 'Reviewing injection points', 'Building report']; let timer = 0; const interval = window.setInterval(() => { timer = Math.min(timer + 1, checks.length - 1); setProgress(Math.min(90, (timer + 1) * 18)); setCurrentCheck(checks[timer]) }, 500); try { const response = await fetch(`/api/scan?target=${encodeURIComponent(target.trim().replace(/\/$/, ''))}`); if (response.status === 403) throw new Error('Verify this domain on the Verified domains page before scanning it.'); if (!response.ok) throw new Error('The scan could not complete.'); const data = await response.json() as ScanReport; setReport(data); setProgress(100); setStatus('Scan complete'); if (!currentUser()?.email) { saveGuestReport(data); setGuestBanner(true) } await loadHistory() } catch (error) { setStatus(error instanceof Error ? error.message : 'Scan failed') } finally { window.clearInterval(interval); setScanning(false) } }
   async function chooseArchive(event: ChangeEvent<HTMLInputElement>) { const file = event.target.files?.[0]; if (!file) return; setUploadedFile(file.name); setScanning(true); setStatus(`Analyzing ${file.name}...`); const formData = new FormData(); formData.append('file', file); try { const response = await fetch('/api/scan/upload', { method: 'POST', body: formData }); if (!response.ok) throw new Error('The source scan could not complete.'); const data = await response.json() as ScanReport; setReport(data); setStatus('Scan complete'); if (!currentUser()?.email) { saveGuestReport(data); setGuestBanner(true) } await loadHistory() } catch (error) { setStatus(error instanceof Error ? error.message : 'Source scan failed') } finally { setScanning(false); event.target.value = '' } }
   if (path === '/verify-email') return <VerifyEmailPage />

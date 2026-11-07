@@ -1,9 +1,10 @@
 """Domain ownership verification (SRS objective O6).
 
 A live scan may only start for a domain the user has proven they control.
-Two methods are supported:
+Three methods are supported:
   dns  - a TXT record at _vibepen-verify.<domain>
   file - a text file at https://<domain>/.well-known/vibepen-verify.txt
+  meta - a <meta name="vibepen-verification" content="<token>"> tag in the homepage <head>
 Local sandbox targets (localhost, 127.0.0.1) are trusted automatically.
 """
 import ipaddress
@@ -12,8 +13,9 @@ import re
 import secrets
 import socket
 from datetime import datetime, timedelta, timezone
+from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import dns.exception
 import dns.resolver
@@ -24,6 +26,10 @@ VALID_DAYS = 30
 SANDBOX_HOSTS = {"localhost", "127.0.0.1", "::1"}
 TXT_LABEL = "_vibepen-verify"
 FILE_PATH = "/.well-known/vibepen-verify.txt"
+META_NAME = "vibepen-verification"
+MAX_PAGE_BYTES = 512 * 1024
+MAX_REDIRECTS = 3
+REDIRECT_CODES = {301, 302, 303, 307, 308}
 DOMAIN_RE = re.compile(r"^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$")
 
 
@@ -60,6 +66,7 @@ def _with_instructions(record: dict) -> dict:
         "txt_value": value,
         "file_url": f"https://{record['domain']}{FILE_PATH}",
         "file_content": value,
+        "meta_tag": f'<meta name="{META_NAME}" content="{record["token"]}">',
     }
 
 
@@ -133,21 +140,96 @@ def _check_file(domain: str, token: str) -> bool:
     return False
 
 
+class _MetaTagFinder(HTMLParser):
+    """Collects the content of <meta name="vibepen-verification"> tags seen before <body>."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.values: list[str] = []
+        self._in_body = False
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "body":
+            self._in_body = True
+        elif tag == "meta" and not self._in_body:
+            attributes = {key.lower(): (value or "") for key, value in attrs}
+            if attributes.get("name", "").strip().lower() == META_NAME:
+                self.values.append(attributes.get("content", "").strip())
+
+
+def _read_page(response) -> str:
+    body = b""
+    for chunk in response.iter_content(65536):
+        body += chunk
+        if len(body) >= MAX_PAGE_BYTES:
+            break
+    try:
+        return body[:MAX_PAGE_BYTES].decode(response.encoding or "utf-8", errors="ignore")
+    except LookupError:
+        return body[:MAX_PAGE_BYTES].decode("utf-8", errors="ignore")
+
+
+def _fetch_homepage(domain: str) -> str | None:
+    """Fetch https://<domain>/ (then http), following only same-host redirects."""
+    for scheme in ("https", "http"):
+        url = f"{scheme}://{domain}/"
+        for _ in range(MAX_REDIRECTS + 1):
+            try:
+                response = requests.get(
+                    url, timeout=5, allow_redirects=False, stream=True,
+                    headers={"User-Agent": "VibePen-Verifier/1.0"},
+                )
+            except requests.RequestException:
+                break
+            try:
+                if response.status_code in REDIRECT_CODES:
+                    location = response.headers.get("Location")
+                    if not location:
+                        break
+                    url = urljoin(url, location)
+                    parsed = urlparse(url)
+                    if parsed.scheme not in ("http", "https") or (parsed.hostname or "").lower().rstrip(".") != domain:
+                        break  # off-host redirect: refuse
+                    continue
+                if response.status_code == 200:
+                    return _read_page(response)
+                break
+            finally:
+                response.close()
+    return None
+
+
+def _check_meta(domain: str, token: str) -> bool:
+    if not _is_public_host(domain):
+        return False
+    page = _fetch_homepage(domain)
+    if page is None:
+        return False
+    finder = _MetaTagFinder()
+    try:
+        finder.feed(page)
+        finder.close()
+    except Exception:  # malformed HTML must never crash verification
+        pass
+    return token in finder.values
+
+
 def verify_domain(domain: str, method: str) -> dict:
     domain = normalize_domain(domain)
-    if method not in ("dns", "file"):
-        raise ValueError("Method must be 'dns' or 'file'.")
+    if method not in ("dns", "file", "meta"):
+        raise ValueError("Method must be 'dns', 'file' or 'meta'.")
     data = _load()
     record = data.get(domain)
     if record is None:
         raise KeyError(domain)
-    checker = _check_dns if method == "dns" else _check_file
+    checker = {"dns": _check_dns, "file": _check_file, "meta": _check_meta}[method]
     if checker(domain, record["token"]):
         record.update(status="verified", method=method, verified_at=_now().isoformat(),
                       expires_at=(_now() + timedelta(days=VALID_DAYS)).isoformat(), error=None)
     else:
-        label = "TXT record" if method == "dns" else "verification file"
-        record.update(status="failed", error=f"{label} not found yet. DNS changes can take a few minutes.")
+        label = {"dns": "TXT record", "file": "verification file", "meta": "Meta tag in the homepage <head>"}[method]
+        hint = "It must be in the HTML your server sends, not added by JavaScript." if method == "meta" else "DNS changes can take a few minutes."
+        record.update(status="failed", error=f"{label} not found yet. {hint}")
     data[domain] = record
     _save(data)
     return _with_instructions({**record, "status": _status(record)})
@@ -167,7 +249,7 @@ def is_authorized(target: str) -> bool:
         domain = record["domain"]
         if host == domain:
             return True
-        # A DNS record proves control of the whole zone; a file only proves one host.
+        # A DNS record proves control of the whole zone; a file or meta tag only proves one host.
         if record.get("method") == "dns" and host.endswith("." + domain):
             return True
     return False

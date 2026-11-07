@@ -99,6 +99,16 @@ def current_user(
     return user
 
 
+def optional_user(
+    token: str | None = Cookie(default=None, alias=COOKIE),
+    db: Session = Depends(get_db),
+) -> User | None:
+    try:
+        return current_user(token, db)
+    except HTTPException:
+        return None
+
+
 @router.post("/register", status_code=201)
 def register(body: Credentials, background: BackgroundTasks, db: Session = Depends(get_db)):
     email = body.email.strip().lower()
