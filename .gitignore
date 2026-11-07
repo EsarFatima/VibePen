@@ -7,3 +7,4 @@ dist/
 dataset/apps/*/node_modules
 *.log
 backend/verified_domains.json
+backend/vibepen.db

@@ -242,6 +242,314 @@
     "target_type": "URL"
   },
   {
+    "id": "cccde53e860b43c8a9971325ddc46d4a",
+    "scanned_at": "2026-11-07T10:18:56.655556+00:00",
+    "target_type": "URL",
+    "risk_score": 18.7,
+    "total_findings": 5,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1,
+      "low": 3
+    },
+    "report": {
+      "target": "http://localhost:3000",
+      "total_findings": 5,
+      "severity_counts": {
+        "critical": 1,
+        "medium": 1,
+        "low": 3
+      },
+      "risk_score": 18.7,
+      "findings": [
+        {
+          "type": "missing_auth",
+          "evidence": "An unauthenticated request received administrative application configuration",
+          "location": "http://localhost:3000/rest/admin/application-configuration",
+          "id": "bc81dbf7ec9a",
+          "severity": "critical",
+          "confidence": 0.98,
+          "title": "Private information is visible without signing in",
+          "description": "Someone who is not signed in was able to open an area that should be private.",
+          "remediation": "Require sign-in and check the person\u2019s permissions before showing private information.",
+          "score": 9.8
+        },
+        {
+          "type": "wildcard_cors",
+          "evidence": "Access-Control-Allow-Origin: * on http://localhost:3000/rest/products/search?q=apple",
+          "location": "http://localhost:3000/rest/products/search?q=apple",
+          "id": "c9d9a8149a8d",
+          "severity": "medium",
+          "confidence": 0.95,
+          "title": "The site accepts requests from any website",
+          "description": "Another website may be allowed to ask this site for information.",
+          "remediation": "Allow requests only from websites that you trust.",
+          "score": 3.8
+        },
+        {
+          "type": "missing_security_headers",
+          "evidence": "The website response did not include: Content-Security-Policy (limits what browser content can run), Referrer-Policy (limits URL information shared with other sites), Permissions-Policy (limits access to browser capabilities)",
+          "location": "http://localhost:3000",
+          "id": "f646ce6ce54a",
+          "severity": "low",
+          "confidence": 0.95,
+          "title": "Some browser safety settings are missing",
+          "description": "The website does not tell browsers to apply several helpful safety restrictions.",
+          "remediation": "Add a Content Security Policy, Referrer Policy, and Permissions Policy appropriate for the application.",
+          "score": 1.9
+        },
+        {
+          "type": "verbose_error_handling",
+          "evidence": "An unauthenticated request to /rest/order-history returned HTTP 500 with technical error detail 'stack'",
+          "location": "http://localhost:3000/rest/order-history",
+          "id": "1dd098105f61",
+          "severity": "low",
+          "confidence": 0.8,
+          "title": "Error messages reveal too much detail",
+          "description": "An unusual request caused the site to reveal details about how it works.",
+          "remediation": "Show visitors a simple error message and keep technical details in private server logs.",
+          "score": 1.6
+        },
+        {
+          "type": "verbose_error_handling",
+          "evidence": "An unauthenticated request to /rest/user/data returned HTTP 500 with technical error detail 'stack'",
+          "location": "http://localhost:3000/rest/user/data",
+          "id": "132efa0ce8a6",
+          "severity": "low",
+          "confidence": 0.8,
+          "title": "Error messages reveal too much detail",
+          "description": "An unusual request caused the site to reveal details about how it works.",
+          "remediation": "Show visitors a simple error message and keep technical details in private server logs.",
+          "score": 1.6
+        }
+      ],
+      "target_type": "OWASP Juice Shop",
+      "scan_type": "URL",
+      "supported": true,
+      "message": "",
+      "authentication": {
+        "checked": false,
+        "account": null
+      },
+      "network_info": {
+        "status": "success",
+        "target": "http://localhost:3000",
+        "hostname": "localhost",
+        "ip_address": "127.0.0.1",
+        "is_local": true,
+        "scanner": "Nmap 7.991",
+        "open_ports": [
+          {
+            "port": 80,
+            "protocol": "tcp",
+            "state": "open",
+            "service": "http",
+            "product": "",
+            "version": ""
+          },
+          {
+            "port": 3000,
+            "protocol": "tcp",
+            "state": "open",
+            "service": "ppp",
+            "product": "",
+            "version": ""
+          },
+          {
+            "port": 3306,
+            "protocol": "tcp",
+            "state": "open",
+            "service": "mysql",
+            "product": "",
+            "version": ""
+          },
+          {
+            "port": 8000,
+            "protocol": "tcp",
+            "state": "open",
+            "service": "http-alt",
+            "product": "",
+            "version": ""
+          },
+          {
+            "port": 8080,
+            "protocol": "tcp",
+            "state": "open",
+            "service": "http-proxy",
+            "product": "",
+            "version": ""
+          },
+          {
+            "port": 8443,
+            "protocol": "tcp",
+            "state": "open",
+            "service": "https-alt",
+            "product": "",
+            "version": ""
+          }
+        ],
+        "open_port_count": 6,
+        "ports_scanned_count": 14,
+        "duration_seconds": 0.26
+      }
+    },
+    "target": "http://localhost:3000"
+  },
+  {
+    "id": "b0c8f15111fe4f97943f8955bf4656d3",
+    "scanned_at": "2026-11-07T10:17:03.510012+00:00",
+    "target_type": "URL",
+    "risk_score": 18.7,
+    "total_findings": 5,
+    "severity_counts": {
+      "critical": 1,
+      "medium": 1,
+      "low": 3
+    },
+    "report": {
+      "target": "http://localhost:3000",
+      "total_findings": 5,
+      "severity_counts": {
+        "critical": 1,
+        "medium": 1,
+        "low": 3
+      },
+      "risk_score": 18.7,
+      "findings": [
+        {
+          "type": "missing_auth",
+          "evidence": "An unauthenticated request received administrative application configuration",
+          "location": "http://localhost:3000/rest/admin/application-configuration",
+          "id": "bc81dbf7ec9a",
+          "severity": "critical",
+          "confidence": 0.98,
+          "title": "Private information is visible without signing in",
+          "description": "Someone who is not signed in was able to open an area that should be private.",
+          "remediation": "Require sign-in and check the person\u2019s permissions before showing private information.",
+          "score": 9.8
+        },
+        {
+          "type": "wildcard_cors",
+          "evidence": "Access-Control-Allow-Origin: * on http://localhost:3000/rest/products/search?q=apple",
+          "location": "http://localhost:3000/rest/products/search?q=apple",
+          "id": "c9d9a8149a8d",
+          "severity": "medium",
+          "confidence": 0.95,
+          "title": "The site accepts requests from any website",
+          "description": "Another website may be allowed to ask this site for information.",
+          "remediation": "Allow requests only from websites that you trust.",
+          "score": 3.8
+        },
+        {
+          "type": "missing_security_headers",
+          "evidence": "The website response did not include: Content-Security-Policy (limits what browser content can run), Referrer-Policy (limits URL information shared with other sites), Permissions-Policy (limits access to browser capabilities)",
+          "location": "http://localhost:3000",
+          "id": "f646ce6ce54a",
+          "severity": "low",
+          "confidence": 0.95,
+          "title": "Some browser safety settings are missing",
+          "description": "The website does not tell browsers to apply several helpful safety restrictions.",
+          "remediation": "Add a Content Security Policy, Referrer Policy, and Permissions Policy appropriate for the application.",
+          "score": 1.9
+        },
+        {
+          "type": "verbose_error_handling",
+          "evidence": "An unauthenticated request to /rest/order-history returned HTTP 500 with technical error detail 'stack'",
+          "location": "http://localhost:3000/rest/order-history",
+          "id": "1dd098105f61",
+          "severity": "low",
+          "confidence": 0.8,
+          "title": "Error messages reveal too much detail",
+          "description": "An unusual request caused the site to reveal details about how it works.",
+          "remediation": "Show visitors a simple error message and keep technical details in private server logs.",
+          "score": 1.6
+        },
+        {
+          "type": "verbose_error_handling",
+          "evidence": "An unauthenticated request to /rest/user/data returned HTTP 500 with technical error detail 'stack'",
+          "location": "http://localhost:3000/rest/user/data",
+          "id": "132efa0ce8a6",
+          "severity": "low",
+          "confidence": 0.8,
+          "title": "Error messages reveal too much detail",
+          "description": "An unusual request caused the site to reveal details about how it works.",
+          "remediation": "Show visitors a simple error message and keep technical details in private server logs.",
+          "score": 1.6
+        }
+      ],
+      "target_type": "OWASP Juice Shop",
+      "scan_type": "URL",
+      "supported": true,
+      "message": "",
+      "authentication": {
+        "checked": false,
+        "account": null
+      },
+      "network_info": {
+        "status": "success",
+        "target": "http://localhost:3000",
+        "hostname": "localhost",
+        "ip_address": "127.0.0.1",
+        "is_local": true,
+        "scanner": "Nmap 7.991",
+        "open_ports": [
+          {
+            "port": 80,
+            "protocol": "tcp",
+            "state": "open",
+            "service": "http",
+            "product": "",
+            "version": ""
+          },
+          {
+            "port": 3000,
+            "protocol": "tcp",
+            "state": "open",
+            "service": "ppp",
+            "product": "",
+            "version": ""
+          },
+          {
+            "port": 3306,
+            "protocol": "tcp",
+            "state": "open",
+            "service": "mysql",
+            "product": "",
+            "version": ""
+          },
+          {
+            "port": 8000,
+            "protocol": "tcp",
+            "state": "open",
+            "service": "http-alt",
+            "product": "",
+            "version": ""
+          },
+          {
+            "port": 8080,
+            "protocol": "tcp",
+            "state": "open",
+            "service": "http-proxy",
+            "product": "",
+            "version": ""
+          },
+          {
+            "port": 8443,
+            "protocol": "tcp",
+            "state": "open",
+            "service": "https-alt",
+            "product": "",
+            "version": ""
+          }
+        ],
+        "open_port_count": 6,
+        "ports_scanned_count": 14,
+        "duration_seconds": 0.7
+      }
+    },
+    "target": "http://localhost:3000"
+  },
+  {
     "id": "a54edacf4413418cbc1f017758351f31",
     "scanned_at": "2026-11-06T18:39:02.010021+00:00",
     "target_type": "URL",

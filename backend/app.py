@@ -17,6 +17,10 @@ from scanners.network_scanner import scan_target_network
 
 app = FastAPI(title="VibePen Security Dashboard")
 
+import db, auth
+db.Base.metadata.create_all(db.engine)
+app.include_router(auth.router)
+
 from fastapi import UploadFile, File
 import zipfile
 import shutil
