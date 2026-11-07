@@ -6,3 +6,4 @@ dist/
 .env
 dataset/apps/*/node_modules
 *.log
+backend/verified_domains.json

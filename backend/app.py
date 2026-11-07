@@ -1,7 +1,9 @@
 import os
 
-from fastapi import FastAPI, Query
+
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 
 from detector.dynamic.run_dynamic_juice_shop import run_juice_shop_checks
 from detector.dynamic.generic_checks import run_generic_checks
@@ -9,6 +11,7 @@ from detector.dynamic.run_dynamic_dvwa import run_dvwa_checks
 from detector.scoring.scorer import build_scan_report
 from scan_history import get_scan_history, record_scan
 from target_detection import detect_target
+import verification
 from scanners.network_scanner import scan_target_network
 
 
@@ -89,6 +92,8 @@ def scan_uploaded_code(file: UploadFile = File(...)) -> dict:
 
 @app.get("/api/scan")
 def scan(target: str = Query("http://localhost:3000", min_length=1)) -> dict:
+  if not verification.is_authorized(target):
+    raise HTTPException(status_code=403, detail="Domain ownership has not been verified. Verify this domain before scanning it.")
   profile = detect_target(target)
   if profile.kind == "juice_shop":
     findings, account = run_juice_shop_checks(
@@ -123,7 +128,39 @@ def scan(target: str = Query("http://localhost:3000", min_length=1)) -> dict:
   record_scan(report)
   return report
 
+class DomainIn(BaseModel):
+  domain: str
 
+class VerifyIn(BaseModel):
+  method: str = "dns"
+
+@app.post("/api/domains")
+def add_domain(body: DomainIn) -> dict:
+  try:
+    return verification.issue_challenge(body.domain)
+  except ValueError as error:
+    raise HTTPException(status_code=400, detail=str(error))
+
+@app.get("/api/domains")
+def get_domains() -> dict:
+  return {"domains": verification.list_domains()}
+
+@app.post("/api/domains/{domain}/verify")
+def verify_domain(domain: str, body: VerifyIn) -> dict:
+  try:
+    return verification.verify_domain(domain, body.method)
+  except ValueError as error:
+    raise HTTPException(status_code=400, detail=str(error))
+  except KeyError:
+    raise HTTPException(status_code=404, detail="Add this domain first to get a verification token.")
+
+@app.delete("/api/domains/{domain}")
+def delete_domain(domain: str) -> dict:
+  try:
+    return {"deleted": verification.remove_domain(domain)}
+  except ValueError as error:
+    raise HTTPException(status_code=400, detail=str(error))
+  
 @app.get("/api/history")
 def history(target: str = Query("http://localhost:3000", min_length=1)) -> dict:
   return {"target": target.rstrip("/"), "history": get_scan_history(target)}
