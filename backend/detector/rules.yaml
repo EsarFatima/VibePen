@@ -1,6 +1,24 @@
 rules:
   - id: detect-vibe-openai-keys
-    languages: [javascript]
-    message: "CRITICAL SECURITY FLAW: Found a hardcoded OpenAI secret key! AI models often hardcode credentials during rapid generation."
+    languages: [generic]
+    message: "CRITICAL SECURITY FLAW: Possible hardcoded OpenAI secret key. Verify whether the credential is real."
     severity: ERROR
-    pattern-regex: sk-proj-[A-Za-z0-9]{32,}
+    pattern-regex: 'sk-proj-[A-Za-z0-9_-]{20,}'
+
+  - id: detect-hardcoded-generic-api-key
+    languages: [generic]
+    message: "Possible hardcoded API key or secret. Verify whether the value is a real credential."
+    severity: WARNING
+    pattern-regex: '(?i)(api[_-]?key|api[_-]?secret|access[_-]?token)\s*[:=]\s*["\x27][A-Za-z0-9_\-]{16,}["\x27]'
+
+  - id: detect-hardcoded-password
+    languages: [generic]
+    message: "Possible hardcoded password. Move credentials to a secure configuration or secret store."
+    severity: WARNING
+    pattern-regex: '(?i)(password|passwd|pwd)\s*[:=]\s*["\x27][^"\x27\s]{8,}["\x27]'
+
+  - id: vibepen-secret-in-public-env
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: "A secret key is stored in a variable that is sent to every visitor's browser. Keep it on the server only."
+    pattern-regex: (VITE|NEXT_PUBLIC|REACT_APP)_[A-Z0-9_]*(SECRET|SERVICE_ROLE|PRIVATE)[A-Z0-9_]*
