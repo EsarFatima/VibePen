@@ -22,3 +22,9 @@ rules:
     severity: ERROR
     message: "A secret key is stored in a variable that is sent to every visitor's browser. Keep it on the server only."
     pattern-regex: (VITE|NEXT_PUBLIC|REACT_APP)_[A-Z0-9_]*(SECRET|SERVICE_ROLE|PRIVATE)[A-Z0-9_]*
+
+  - id: vibepen-open-database
+    languages: [generic]
+    severity: ERROR
+    message: "Database rules allow anyone to read or write all data without logging in. Require sign-in and check who owns the data."
+    pattern-regex: 'allow\s+(read|write|read\s*,\s*write)\s*:\s*if\s+true'
