@@ -146,3 +146,13 @@ def build_scan_report(target: str, findings: list[dict]) -> dict:
         "risk_score": round(sum(item["score"] for item in scored_findings), 2),
         "findings": scored_findings,
     }
+
+
+
+SCORING_RULES["vibepen-nonexistent-package"] = {
+    "severity": "high",
+    "confidence": 0.85,
+    "title": "Your app uses a package that does not exist",
+    "description": "This package name is not on npm. AI tools sometimes invent package names, and an attacker can register that name and hide harmful code in it, which then gets installed in your app.",
+    "remediation": "Remove it or replace it with the real package you meant, and double-check the spelling before running npm install.",
+}

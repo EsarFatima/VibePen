@@ -63,9 +63,9 @@ def scan_uploaded_code(file: UploadFile = File(...)) -> dict:
             # Only now is it safe to extract.
             zip_ref.extractall(extract_dir)
 
-        from detector.static_analyzer import analyze_directory
+        from detector.static_analyzer import analyze_directory ; from detector.package_checker import check_packages
 
-        findings = analyze_directory(extract_dir)
+        findings = analyze_directory(extract_dir) + check_packages(extract_dir)
 
         errors = [f for f in findings if "error" in f]
         if errors:
