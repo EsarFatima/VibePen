@@ -33,68 +33,61 @@ import tempfile
 
 @app.post("/api/scan/upload")
 def scan_uploaded_code(file: UploadFile = File(...)) -> dict:
-    """
-    FYP Requirement: Accepts an uploaded source code .zip bundle,
-    extracts it safely, and processes it through our upgraded Semgrep Engine.
-    """
-    # Verify that the user uploaded a compressed file
-    filename = os.path.basename(file.filename or '')
-    if not filename.lower().endswith('.zip'):
-        return {"error": "Invalid format. Please upload a structured project .zip archive."}
-        
-    # Create a safe, temporary background directory to extract code into
+    """Accepts a source code .zip, extracts it safely, and scans it with Semgrep."""
+    filename = os.path.basename(file.filename or "")
+    if not filename.lower().endswith(".zip"):
+        return {"error": "Invalid format. Please upload a project .zip archive."}
+
     temp_dir = tempfile.mkdtemp()
     zip_path = os.path.join(temp_dir, filename)
-    
+
     try:
-        # Save the uploaded streaming file down to our temporary storage
         with open(zip_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-            
-        # Extract all contents of the zip file
+
         extract_dir = os.path.join(temp_dir, "extracted_source")
         os.makedirs(extract_dir, exist_ok=True)
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-          extract_root = os.path.abspath(extract_dir)
-          for member in zip_ref.infolist():
-            member_path = os.path.abspath(os.path.join(extract_root, member.filename))
-            if os.path.commonpath([extract_root, member_path]) != extract_root:
-              raise ValueError("Archive contains an unsafe path.")
+        extract_root = os.path.abspath(extract_dir)
+
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            # First check EVERY file inside the zip. Nothing is extracted yet.
+            total_size = 0
+            for member in zip_ref.infolist():
+                member_path = os.path.abspath(os.path.join(extract_root, member.filename))
+                if os.path.commonpath([extract_root, member_path]) != extract_root:
+                    raise ValueError("Archive contains an unsafe path.")
+                total_size += member.file_size
+            if total_size > 100 * 1024 * 1024:
+                raise ValueError("Archive is too large (limit is 100 MB after unzipping).")
+
+            # Only now is it safe to extract.
             zip_ref.extractall(extract_dir)
-            
-        # Import your newly written Semgrep module dynamically
+
         from detector.static_analyzer import analyze_directory
-        
-        # Execute your custom static engine against the extracted directory
+
         findings = analyze_directory(extract_dir)
-        
-        # Calculate a basic mockup risk structure to keep the dashboard happy
-        critical_count = sum(1 for f in findings if f.get("severity") == "ERROR")
-        risk_score = min(100, critical_count * 25)
-        
-        report = {
-            "target": filename,
-            "target_type": "Source Code Archive",
-            "scan_type": "ZIP",
-            "findings": findings,
-            "total_findings": len(findings),
-            "risk_score": risk_score,
-            "status": "Success"
-        }
-        
-        # Save the report to the global history file just like their code does
+
+        errors = [f for f in findings if "error" in f]
+        if errors:
+            return {"error": errors[0]["error"]}
+
+        # Use the team's shared scoring, so uploads get the same report format as live scans
+        report = build_scan_report(filename, findings)
+        report["target_type"] = "Source Code Archive"
+        report["scan_type"] = "ZIP"
+        report["status"] = "Success"
+
         try:
             entry = record_scan(report)
             report["id"] = entry["id"]
         except Exception:
-            pass # Keep execution alive if history recorder differs slightly
-            
+            pass
+
         return report
 
     except Exception as e:
-        return {"error": f"Internal pipeline analysis failure: {str(e)}"}
+        return {"error": f"Upload scan failed: {str(e)}"}
     finally:
-        # Always clean up temporary files on the server hard drive when done
         try:
             shutil.rmtree(temp_dir)
         except Exception:

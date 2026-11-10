@@ -12,14 +12,15 @@ def get_evidence(match):
             line = f.read().splitlines()[match["start"]["line"] - 1].strip()
     except Exception:
         return "No code snippet available."
-    # Hide most of any long text inside quotes, so we never show a full secret
+
     def hide(m):
         text = m.group(0)
         inner = text[1:-1]
         if len(inner) > 6:
             return text[0] + inner[:4] + "****" + text[-1]
-        return text 
+        return text
 
+    # Hide most of any long text inside quotes, so we never show a full secret
     line = re.sub(r'"[^"]*"|\'[^\']*\'', hide, line)
     return line[:200]
 
@@ -61,10 +62,12 @@ def analyze_directory(target_directory: str):
             for match in raw_results:
                 extra = match.get("extra", {})
                 line_number = match.get("start", {}).get("line")
+                # Semgrep adds a folder prefix like "detector." - keep only the rule name
+                rule_id = match.get("check_id", "vulnerability_detected").split(".")[-1]
 
                 formatted_findings.append({
-                    "type": match.get("check_id", "vulnerability_detected"),
-                    "title": match.get("check_id", "Security issue"),
+                    "type": rule_id,
+                    "title": rule_id,
                     "evidence": get_evidence(match),
                     "location": f"{short_path(match.get('path'), target_directory)} (Line {line_number})",
                     "severity": extra.get("severity", "ERROR"),

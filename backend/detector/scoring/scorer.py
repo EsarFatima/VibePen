@@ -63,6 +63,44 @@ SCORING_RULES = {
 
 SEVERITY_POINTS = {"critical": 10, "high": 7, "medium": 4, "low": 2, "info": 1}
 
+SCORING_RULES.update({
+    "vibepen-open-database": {
+        "severity": "critical",
+        "confidence": 0.9,
+        "title": "Your database is open to everyone",
+        "description": "The database rules let anyone on the internet read or change your data without logging in.",
+        "remediation": "Change the rules so only signed-in users can access data, and only their own data.",
+    },
+    "vibepen-secret-in-public-env": {
+        "severity": "critical",
+        "confidence": 0.85,
+        "title": "A secret key is visible to every visitor",
+        "description": "A private key is stored in a setting that gets sent to the browser, so anyone can open the page source and copy it.",
+        "remediation": "Move the key to the server side (without the VITE_ / NEXT_PUBLIC_ / REACT_APP_ prefix) and rotate the old key.",
+    },
+    "detect-vibe-openai-keys": {
+        "severity": "critical",
+        "confidence": 0.9,
+        "title": "An OpenAI key is written in the code",
+        "description": "Anyone who sees this code can use your OpenAI account and you pay the bill.",
+        "remediation": "Delete the key from the code, create a new one, and keep it in a private environment variable on the server.",
+    },
+    "detect-hardcoded-generic-api-key": {
+        "severity": "high",
+        "confidence": 0.6,
+        "title": "An API key is written in the code",
+        "description": "A key or token is typed directly in the code. If the code is shared or public, others can use it.",
+        "remediation": "Move the key into a private environment variable and rotate it if the code was ever shared.",
+    },
+    "detect-hardcoded-password": {
+        "severity": "medium",
+        "confidence": 0.6,
+        "title": "A password is written in the code",
+        "description": "A password is typed directly in the code, so anyone who can read the code can see it.",
+        "remediation": "Move the password into a private environment variable or a secrets store.",
+    },
+})
+
 
 def _finding_id(finding: dict) -> str:
     identity = f"{finding.get('type', 'unknown')}|{finding.get('location', '')}|{finding.get('evidence', '')}"
