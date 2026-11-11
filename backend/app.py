@@ -12,7 +12,7 @@ from detector.scoring.scorer import build_scan_report
 from scan_history import delete_scan, get_all_scan_history, get_scan, get_scan_history, record_scan
 from target_detection import detect_target
 import verification
-from scanners.network_scanner import scan_target_network
+from scanners.network_scanner import scan_target_network ; from scanners.web_scan import safe_secret_findings
 
 
 app = FastAPI(title="VibePen Security Dashboard")
@@ -127,7 +127,7 @@ def scan(
   # Run URL-to-IP resolution and Nmap port discovery
   network_info = scan_target_network(target)
 
-  report = build_scan_report(target, findings)
+  report = build_scan_report(target, findings + safe_secret_findings(target))
   report["target_type"] = profile.label
   report["scan_type"] = "URL"
   report["supported"] = profile.supported

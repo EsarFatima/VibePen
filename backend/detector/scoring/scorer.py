@@ -156,3 +156,12 @@ SCORING_RULES["vibepen-nonexistent-package"] = {
     "description": "This package name is not on npm. AI tools sometimes invent package names, and an attacker can register that name and hide harmful code in it, which then gets installed in your app.",
     "remediation": "Remove it or replace it with the real package you meant, and double-check the spelling before running npm install.",
 }
+
+
+SCORING_RULES["hardcoded_secret"] = {
+    "severity": "critical",
+    "confidence": 0.8,
+    "title": "A secret key is visible to every visitor",
+    "description": "A private key or password is written inside the website's JavaScript, which anyone can open and read in their browser.",
+    "remediation": "Remove the key from the front-end code, create a new one (the old one is already exposed), and keep it on the server only.",
+}
