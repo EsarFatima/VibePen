@@ -290,3 +290,19 @@ docker run -d -p 8080:80 --name dvwa vulnerables/web-dvwa
 ```
 
 This is the standard local workflow for this project.
+
+
+## Optional: Playwright crawler
+
+The live scan can open the site in a real browser and look for leaked keys in its JavaScript. Install it once, inside the backend venv:
+
+```
+python -m pip install playwright
+python -m playwright install chromium
+```
+
+Without it, the scan still works and skips this step. To try it by itself:
+
+```
+python -m scanners.web_scan http://localhost:3000
+```

@@ -336,3 +336,34 @@ npm run dev -- --host 0.0.0.0
 
 Open `http://localhost:8443/` and enter a target such as `http://localhost:3000`. Do not enter the backend API URL in the target field.
 
+
+---
+
+## 12. Update — November 2026: Static scan and site crawler
+
+### Added
+- **ZIP upload scan** (`POST /api/scan/upload`): every path in the archive is checked before extracting, 100 MB limit, Semgrep scan, results scored with the shared scorer.
+- **Semgrep rules** (`backend/detector/rules.yaml`): OpenAI keys, generic API keys, hardcoded passwords, secrets in public env variables (`VITE_`, `NEXT_PUBLIC_`, `REACT_APP_`), and open database rules (`allow read, write: if true`).
+- **npm package existence check** (`backend/detector/package_checker.py`): flags dependencies that do not exist on npm (AI-invented names, "slopsquatting"). Runs on ZIP uploads.
+- **Playwright crawler** (`backend/scanners/playwright_crawler.py`): opens the site in a real browser and lists pages, forms, JavaScript files and background requests. It never leaves the site it was given.
+- **JavaScript secret scan** (`backend/scanners/web_scan.py`): reads every JavaScript file the crawler found and checks for leaked keys using the patterns in `secret_scanner.py`. Runs inside `/api/scan` after the domain ownership check.
+
+### Tested
+- Sample vibe-coded ZIP with 5 known flaws: all 5 found, safe lines not flagged.
+- Test site with a fake Stripe key in its JavaScript: found, with the key partly hidden in the report.
+- Juice Shop crawl: 10 pages, 4 forms, 8 JavaScript files, 0 false secret alerts.
+- The crawler originally followed a Juice Shop link to GitHub. Fixed: navigation to other websites is now blocked.
+
+### Known limits
+- The crawler visits at most 10 pages and does not log in.
+- The package check covers npm only.
+- Secret detection is pattern-based, so unusual key formats can be missed.
+
+### Setup note
+The crawler needs `pip install playwright` and `python -m playwright install chromium`. Without them the backend still starts and skips the crawler.
+
+### Next steps
+1. Automated tests for the Semgrep rules.
+2. Benchmark with known flaws, then precision, recall and false-positive rate.
+3. More Semgrep rules (`eval`, `innerHTML`, SQL built from user input).
+4. Show ZIP upload results in the dashboard.
