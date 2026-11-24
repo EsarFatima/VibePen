@@ -28,3 +28,16 @@ rules:
     severity: ERROR
     message: "Database rules allow anyone to read or write all data without logging in. Require sign-in and check who owns the data."
     pattern-regex: 'allow\s+(read|write|read\s*,\s*write)\s*:\s*if\s+true'
+
+  
+  - id: vibepen-eval-usage
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: "eval() runs text as code. If any part of that text comes from a user, an attacker can run their own code on your server."
+    pattern-regex: '\beval\s*\(\s*[^)\s]'
+
+  - id: vibepen-nosql-where
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: "The $where operator runs JavaScript inside the database. If user input reaches it, an attacker can run their own code there."
+    pattern-regex: '\$where\s*:'
