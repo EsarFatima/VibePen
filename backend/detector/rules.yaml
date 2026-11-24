@@ -41,3 +41,10 @@ rules:
     severity: ERROR
     message: "The $where operator runs JavaScript inside the database. If user input reaches it, an attacker can run their own code there."
     pattern-regex: '\$where\s*:'
+
+    
+  - id: vibepen-hardcoded-session-secret
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: "A secret used for sessions or encryption is written in the code. Anyone who can read the code can fake sessions or decrypt data."
+    pattern-regex: '(?i)(cookie[_-]?secret|session[_-]?secret|crypto[_-]?key|jwt[_-]?secret|hmac[_-]?(key|secret))\s*[:=]\s*["\x27][^"\x27\s$<{%][^"\x27\s]{7,}["\x27]'

@@ -1,0 +1,12 @@
+{
+  "NodeGoat": {
+    "folder": "C:/Users/lenovo/Desktop/benchmark_targets/NodeGoat-master",
+    "real_flaws": [
+      {"file": "app/data/allocations-dao.js", "rule": "vibepen-nosql-where"},
+      {"file": "app/routes/contributions.js", "rule": "vibepen-eval-usage"},
+      {"file": "config/env/development.js", "rule": "detect-hardcoded-generic-api-key"},
+      {"file": "config/env/test.js", "rule": "detect-hardcoded-generic-api-key"},
+      {"file": "config/env/all.js", "rule": "vibepen-hardcoded-session-secret"}
+    ]
+  }
+}

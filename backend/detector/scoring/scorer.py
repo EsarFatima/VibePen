@@ -182,3 +182,11 @@ SCORING_RULES["vibepen-nosql-where"] = {
     "description": "The $where operator runs JavaScript inside the database. If user input reaches it, an attacker can read or change data they should not touch.",
     "remediation": "Replace $where with normal query operators, and never put user input inside it.",
 }
+
+SCORING_RULES["vibepen-hardcoded-session-secret"] = {
+    "severity": "high",
+    "confidence": 0.7,
+    "title": "A session or encryption secret is written in the code",
+    "description": "The secret that protects logins or encrypted data is typed in the code. Anyone who sees it can fake a login session or read protected data.",
+    "remediation": "Move the secret into a private environment variable, generate a new random value, and never commit it.",
+}
