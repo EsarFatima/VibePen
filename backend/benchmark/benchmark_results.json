@@ -1,0 +1,20 @@
+{
+  "NodeGoat": {
+    "reported": 5,
+    "real_flaws": 5,
+    "true_positives": 5,
+    "false_positives": [],
+    "missed": [],
+    "precision": 1.0,
+    "recall": 1.0
+  },
+  "JuiceShop": {
+    "reported": 10,
+    "real_flaws": 10,
+    "true_positives": 10,
+    "false_positives": [],
+    "missed": [],
+    "precision": 1.0,
+    "recall": 1.0
+  }
+}

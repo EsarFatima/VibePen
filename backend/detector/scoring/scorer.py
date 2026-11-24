@@ -165,3 +165,37 @@ SCORING_RULES["hardcoded_secret"] = {
     "description": "A private key or password is written inside the website's JavaScript, which anyone can open and read in their browser.",
     "remediation": "Remove the key from the front-end code, create a new one (the old one is already exposed), and keep it on the server only.",
 }
+
+SCORING_RULES["vibepen-eval-usage"] = {
+    "severity": "high",
+    "confidence": 0.6,
+    "title": "The code runs text as code (eval)",
+    "description": "eval() turns text into running code. If a visitor can control that text, they can make your server run their own commands.",
+    "remediation": "Remove eval(). Use JSON.parse for data, or a safe lookup instead of building code from text.",
+}
+
+
+SCORING_RULES["vibepen-nosql-where"] = {
+    "severity": "high",
+    "confidence": 0.7,
+    "title": "The database runs JavaScript from a query ($where)",
+    "description": "The $where operator runs JavaScript inside the database. If user input reaches it, an attacker can read or change data they should not touch.",
+    "remediation": "Replace $where with normal query operators, and never put user input inside it.",
+}
+
+SCORING_RULES["vibepen-hardcoded-session-secret"] = {
+    "severity": "high",
+    "confidence": 0.7,
+    "title": "A session or encryption secret is written in the code",
+    "description": "The secret that protects logins or encrypted data is typed in the code. Anyone who sees it can fake a login session or read protected data.",
+    "remediation": "Move the secret into a private environment variable, generate a new random value, and never commit it.",
+}
+
+
+SCORING_RULES["vibepen-sql-string-query"] = {
+    "severity": "high",
+    "confidence": 0.7,
+    "title": "A database query is built from user text",
+    "description": "The SQL command is made by joining text typed by a visitor into it. An attacker can change the command to read or change other data.",
+    "remediation": "Use parameterized queries (placeholders like ? or :name) so user text is only ever treated as data.",
+}

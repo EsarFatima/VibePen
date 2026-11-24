@@ -367,3 +367,106 @@ The crawler needs `pip install playwright` and `python -m playwright install chr
 2. Benchmark with known flaws, then precision, recall and false-positive rate.
 3. More Semgrep rules (`eval`, `innerHTML`, SQL built from user input).
 4. Show ZIP upload results in the dashboard.
+
+
+## 13. Update — November 24, 2026: First real-code test (OWASP NodeGoat)
+
+### What was tested
+The static scanner was run on OWASP NodeGoat, a deliberately vulnerable Node.js app, uploaded as a ZIP through `/api/scan/upload`.
+
+### Result before changes
+- 3 findings, risk score 10.8.
+- 2 were real (hardcoded `zapApiKey` in config files).
+- 1 was a false positive: the password rule matched `$password` in a tutorial page.
+- Missed known flaws such as `eval()` on user input and `$where` NoSQL injection.
+
+### Changes made
+- `detect-hardcoded-password`: now ignores values that start with `$`, `<`, `{` or `%` (template placeholders).
+- New rule `vibepen-eval-usage`: finds `eval()` with something inside the brackets, so comments are skipped.
+- New rule `vibepen-nosql-where`: finds `$where`, scanned in JavaScript/TypeScript files only, so tutorial HTML pages are skipped.
+- Added matching entries for both rules in `scorer.py`.
+
+### Result after changes
+- 7 findings, risk score 30.8, all confirmed real by checking the code:
+  - 2 × `$where` in `allocations-dao.js`
+  - 3 × `eval(req.body...)` in `contributions.js`
+  - 2 × hardcoded `zapApiKey` in `development.js` and `test.js`
+- No false positives on this project.
+
+### Limits
+- This is one project, so it is a first check and not yet a full benchmark.
+- NodeGoat has other flaws the scanner does not detect yet (for example XSS and hardcoded session secrets). Recall will be measured properly with a benchmark script.
+
+### Next
+- Test 2–3 more real projects.
+- Build a benchmark script (precision, recall, false positive rate).
+- Scope Guard: block private addresses and re-check redirects.
+
+## 14. Update — November 24, 2026: Second real-code test (OWASP Juice Shop)
+
+### What was tested
+OWASP Juice Shop (deliberately vulnerable app), uploaded as a ZIP.
+
+### First result
+- 60 findings. Only about 21 were real.
+- About 35 were fake test passwords in `*.spec.ts` files, 4 were example-fix snippets in `codefixes\`, 1 was documentation. Some findings also appeared twice.
+
+### Change made
+- The scanner now skips test files, `test`/`tests` folders, `codefixes`, markdown files and `node_modules`.
+
+### Result after the change
+- 21 findings, all real: 3 × `$where`, 2 × `eval`, 16 hardcoded passwords (demo accounts).
+- No duplicates and no false positives on this project.
+
+### Limits
+- Juice Shop has many more flaws the scanner does not detect yet (e.g. XSS and hardcoded signing keys). This still needs the benchmark script to measure recall.
+
+## 15. Update — November 24, 2026: Benchmark script and first precision/recall results
+
+### What was built
+- `backend/benchmark/run_benchmark.py`: scans a project folder and compares the findings with a list of real flaws (`backend/benchmark/expected.json`). A flaw counts as found when the same file and the same rule are reported.
+- The list of real flaws was made by searching the code directly (not from scanner output), so the scanner is not marking its own homework.
+
+### Results (static scanner, hardcoded-secret, eval and NoSQL-injection categories)
+| Project | Reported | Real flaws listed | Found | Precision | Recall |
+|---|---|---|---|---|---|
+| OWASP NodeGoat | 5 | 5 | 5 | 1.00 | 1.00 |
+| OWASP Juice Shop | 7 | 9 | 7 | 1.00 | 0.78 |
+
+### Notes
+- NodeGoat reached recall 1.0 only after we added the `vibepen-hardcoded-session-secret` rule, which the first benchmark run showed was missing (recall was 0.80). So the NodeGoat result is partly tuned to NodeGoat. Juice Shop is the fairer test.
+- Juice Shop misses: a hardcoded signing key written inside `createHmac(...)` in `lib/insecurity.ts`, and an SQL query built from user input in `routes/login.ts` (no SQL rule yet).
+- The real-flaw lists only cover the categories the current rules aim at. Other flaws in these apps (e.g. XSS) are not in the lists, so these numbers are not overall recall.
+
+### Next
+- Add a rule for SQL built from user input and extend the secret rule to keys written inside function calls.
+- Re-run the benchmark and record the change.
+
+
+## 16. Update — November 24, 2026: Static testing finished, handoff
+
+### Final benchmark results
+| Project | Reported | Real flaws listed | Found | Precision | Recall |
+|---|---|---|---|---|---|
+| OWASP NodeGoat | 5 | 5 | 5 | 1.00 | 1.00 |
+| OWASP Juice Shop | 10 | 10 | 10 | 1.00 | 1.00 |
+
+### Rules added during testing
+`vibepen-eval-usage`, `vibepen-nosql-where`, `vibepen-hardcoded-session-secret`, `vibepen-sql-string-query`. The password rule was tightened and the scanner now skips test, docs and example-fix files.
+
+### How to read these numbers
+- They cover only the flaw types our rules target. Other flaws in these apps (e.g. XSS) are not in the lists, so this is not overall recall.
+- The rules were tuned while looking at these two apps, so the scores are optimistic. A fair next test is a project the rules were not written for.
+- On the first Juice Shop run, one finding looked like a false positive but was a real flaw missing from our list (`routes/search.ts`). Real-flaw lists should be checked by a second person.
+
+### How to re-run
+`python benchmark/run_benchmark.py` from the `backend` folder. Target folders are set in `backend/benchmark/expected.json`.
+
+### Still to do 
+- Scope Guard: block private/loopback addresses and re-check redirects (TC-02).
+- Test the ownership check on a page we own (e.g. GitHub Pages).
+- Dependency checker: registry failure should say "check incomplete", not "missing".
+- Domain verification tokens: code stores them raw, report says hashed.
+- Account isolation on the scan history endpoints.
+- Show ZIP-upload results on the dashboard.
+- Test on 2–3 real vibe-coded projects the rules were not written for.

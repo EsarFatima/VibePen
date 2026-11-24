@@ -5,6 +5,13 @@ import re
 import shutil
 
 
+# Files and folders that are tests, docs or examples, not the real app
+EXCLUDE_PATTERNS = [
+    "*.spec.ts", "*.spec.js", "*.test.ts", "*.test.js",
+    "test", "tests", "__tests__", "codefixes",
+    "*.md", "node_modules",
+]
+
 def get_evidence(match):
     """Read the matching line straight from the file (Semgrep hides it when not logged in)."""
     try:
@@ -51,6 +58,9 @@ def analyze_directory(target_directory: str):
         return [{"error": "Semgrep is not installed. Run: python -m pip install semgrep"}]
 
     command = ["semgrep", "scan", f"--config={rule_path}", target_directory, "--json"]
+
+    for pattern in EXCLUDE_PATTERNS:
+        command += ["--exclude", pattern]
 
     try:
         result = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", check=False)
