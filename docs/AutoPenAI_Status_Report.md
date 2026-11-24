@@ -401,3 +401,22 @@ The static scanner was run on OWASP NodeGoat, a deliberately vulnerable Node.js 
 - Test 2–3 more real projects.
 - Build a benchmark script (precision, recall, false positive rate).
 - Scope Guard: block private addresses and re-check redirects.
+
+## 14. Update — November 24, 2026: Second real-code test (OWASP Juice Shop)
+
+### What was tested
+OWASP Juice Shop (deliberately vulnerable app), uploaded as a ZIP.
+
+### First result
+- 60 findings. Only about 21 were real.
+- About 35 were fake test passwords in `*.spec.ts` files, 4 were example-fix snippets in `codefixes\`, 1 was documentation. Some findings also appeared twice.
+
+### Change made
+- The scanner now skips test files, `test`/`tests` folders, `codefixes`, markdown files and `node_modules`.
+
+### Result after the change
+- 21 findings, all real: 3 × `$where`, 2 × `eval`, 16 hardcoded passwords (demo accounts).
+- No duplicates and no false positives on this project.
+
+### Limits
+- Juice Shop has many more flaws the scanner does not detect yet (e.g. XSS and hardcoded signing keys). This still needs the benchmark script to measure recall.
