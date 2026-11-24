@@ -420,3 +420,24 @@ OWASP Juice Shop (deliberately vulnerable app), uploaded as a ZIP.
 
 ### Limits
 - Juice Shop has many more flaws the scanner does not detect yet (e.g. XSS and hardcoded signing keys). This still needs the benchmark script to measure recall.
+
+## 15. Update — November 24, 2026: Benchmark script and first precision/recall results
+
+### What was built
+- `backend/benchmark/run_benchmark.py`: scans a project folder and compares the findings with a list of real flaws (`backend/benchmark/expected.json`). A flaw counts as found when the same file and the same rule are reported.
+- The list of real flaws was made by searching the code directly (not from scanner output), so the scanner is not marking its own homework.
+
+### Results (static scanner, hardcoded-secret, eval and NoSQL-injection categories)
+| Project | Reported | Real flaws listed | Found | Precision | Recall |
+|---|---|---|---|---|---|
+| OWASP NodeGoat | 5 | 5 | 5 | 1.00 | 1.00 |
+| OWASP Juice Shop | 7 | 9 | 7 | 1.00 | 0.78 |
+
+### Notes
+- NodeGoat reached recall 1.0 only after we added the `vibepen-hardcoded-session-secret` rule, which the first benchmark run showed was missing (recall was 0.80). So the NodeGoat result is partly tuned to NodeGoat. Juice Shop is the fairer test.
+- Juice Shop misses: a hardcoded signing key written inside `createHmac(...)` in `lib/insecurity.ts`, and an SQL query built from user input in `routes/login.ts` (no SQL rule yet).
+- The real-flaw lists only cover the categories the current rules aim at. Other flaws in these apps (e.g. XSS) are not in the lists, so these numbers are not overall recall.
+
+### Next
+- Add a rule for SQL built from user input and extend the secret rule to keys written inside function calls.
+- Re-run the benchmark and record the change.
