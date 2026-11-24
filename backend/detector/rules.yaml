@@ -47,4 +47,12 @@ rules:
     languages: [javascript, typescript]
     severity: ERROR
     message: "A secret used for sessions or encryption is written in the code. Anyone who can read the code can fake sessions or decrypt data."
-    pattern-regex: '(?i)(cookie[_-]?secret|session[_-]?secret|crypto[_-]?key|jwt[_-]?secret|hmac[_-]?(key|secret))\s*[:=]\s*["\x27][^"\x27\s$<{%][^"\x27\s]{7,}["\x27]'
+    pattern-regex: '(?i)((cookie[_-]?secret|session[_-]?secret|crypto[_-]?key|jwt[_-]?secret|hmac[_-]?(key|secret))\s*[:=]\s*["\x27][^"\x27\s$<{%][^"\x27\s]{7,}["\x27]|createHmac\s*\(\s*["\x27][^"\x27]+["\x27]\s*,\s*["\x27][^"\x27\s]{8,}["\x27])'
+
+
+    
+  - id: vibepen-sql-string-query
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: "A database query is built by gluing user text into the SQL. An attacker can change the query."
+    pattern-regex: '(?i)\.(query|execute|raw)\s*\(\s*(`[^`\n]*(select|insert|update|delete)[^`\n]*\$\{|["\x27][^"\x27\n]*(select|insert|update|delete)[^"\x27\n]*["\x27]\s*\+)'

@@ -441,3 +441,32 @@ OWASP Juice Shop (deliberately vulnerable app), uploaded as a ZIP.
 ### Next
 - Add a rule for SQL built from user input and extend the secret rule to keys written inside function calls.
 - Re-run the benchmark and record the change.
+
+
+## 16. Update — November 24, 2026: Static testing finished, handoff
+
+### Final benchmark results
+| Project | Reported | Real flaws listed | Found | Precision | Recall |
+|---|---|---|---|---|---|
+| OWASP NodeGoat | 5 | 5 | 5 | 1.00 | 1.00 |
+| OWASP Juice Shop | 10 | 10 | 10 | 1.00 | 1.00 |
+
+### Rules added during testing
+`vibepen-eval-usage`, `vibepen-nosql-where`, `vibepen-hardcoded-session-secret`, `vibepen-sql-string-query`. The password rule was tightened and the scanner now skips test, docs and example-fix files.
+
+### How to read these numbers
+- They cover only the flaw types our rules target. Other flaws in these apps (e.g. XSS) are not in the lists, so this is not overall recall.
+- The rules were tuned while looking at these two apps, so the scores are optimistic. A fair next test is a project the rules were not written for.
+- On the first Juice Shop run, one finding looked like a false positive but was a real flaw missing from our list (`routes/search.ts`). Real-flaw lists should be checked by a second person.
+
+### How to re-run
+`python benchmark/run_benchmark.py` from the `backend` folder. Target folders are set in `backend/benchmark/expected.json`.
+
+### Still to do 
+- Scope Guard: block private/loopback addresses and re-check redirects (TC-02).
+- Test the ownership check on a page we own (e.g. GitHub Pages).
+- Dependency checker: registry failure should say "check incomplete", not "missing".
+- Domain verification tokens: code stores them raw, report says hashed.
+- Account isolation on the scan history endpoints.
+- Show ZIP-upload results on the dashboard.
+- Test on 2–3 real vibe-coded projects the rules were not written for.

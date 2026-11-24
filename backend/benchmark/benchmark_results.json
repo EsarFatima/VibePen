@@ -9,21 +9,12 @@
     "recall": 1.0
   },
   "JuiceShop": {
-    "reported": 7,
-    "real_flaws": 9,
-    "true_positives": 7,
+    "reported": 10,
+    "real_flaws": 10,
+    "true_positives": 10,
     "false_positives": [],
-    "missed": [
-      [
-        "lib/insecurity.ts",
-        "vibepen-hardcoded-session-secret"
-      ],
-      [
-        "routes/login.ts",
-        "vibepen-sql-string-query"
-      ]
-    ],
+    "missed": [],
     "precision": 1.0,
-    "recall": 0.78
+    "recall": 1.0
   }
 }

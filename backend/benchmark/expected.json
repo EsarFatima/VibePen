@@ -20,7 +20,8 @@
       {"file": "data/static/users.yml", "rule": "detect-hardcoded-password"},
       {"file": "frontend/src/app/login/login.component.ts", "rule": "detect-hardcoded-password"},
       {"file": "lib/insecurity.ts", "rule": "vibepen-hardcoded-session-secret"},
-      {"file": "routes/login.ts", "rule": "vibepen-sql-string-query"}
+      {"file": "routes/login.ts", "rule": "vibepen-sql-string-query"},
+      {"file": "routes/search.ts", "rule": "vibepen-sql-string-query"}
     ]
   }
 }

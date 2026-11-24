@@ -190,3 +190,12 @@ SCORING_RULES["vibepen-hardcoded-session-secret"] = {
     "description": "The secret that protects logins or encrypted data is typed in the code. Anyone who sees it can fake a login session or read protected data.",
     "remediation": "Move the secret into a private environment variable, generate a new random value, and never commit it.",
 }
+
+
+SCORING_RULES["vibepen-sql-string-query"] = {
+    "severity": "high",
+    "confidence": 0.7,
+    "title": "A database query is built from user text",
+    "description": "The SQL command is made by joining text typed by a visitor into it. An attacker can change the command to read or change other data.",
+    "remediation": "Use parameterized queries (placeholders like ? or :name) so user text is only ever treated as data.",
+}
