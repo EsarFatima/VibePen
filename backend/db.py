@@ -1,7 +1,7 @@
 import datetime as dt
 import os
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, UniqueConstraint, create_engine
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 DB_URL = os.getenv("DATABASE_URL", "sqlite:///vibepen.db")
@@ -64,3 +64,16 @@ def get_db():
         yield db
     finally:
         db.close()
+
+class ScanHistory(Base):
+    """A scan report that belongs to one authenticated user."""
+    __tablename__ = "scan_history"
+
+    id = Column(String(32), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    target = Column(String(2048), nullable=False, index=True)
+    target_type = Column(String(64), nullable=False, default="URL")
+    scanned_at = Column(DateTime, default=utcnow, nullable=False, index=True)
+    risk_score = Column(Float, nullable=False, default=0)
+    total_findings = Column(Integer, nullable=False, default=0)
+    report_json = Column(Text, nullable=False)
